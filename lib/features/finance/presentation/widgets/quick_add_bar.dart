@@ -19,9 +19,11 @@ class _QuickAddBarState extends State<QuickAddBar> {
   final _ctrl = TextEditingController();
 
   static const _hints = [
+    'e.g. "I earn \$3000/month freelancing"',
+    'e.g. "Spent \$12 on lunch"',
     'e.g. "I owe John \$500"',
     'e.g. "Spotify \$10/month"',
-    'e.g. "Bank loan \$2000, due March"',
+    'e.g. "YouTube revenue \$800/month"',
     'e.g. "Rent \$800 every month"',
   ];
 

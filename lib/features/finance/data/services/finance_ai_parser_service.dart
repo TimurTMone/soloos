@@ -2,6 +2,8 @@ import 'dart:convert';
 import '../../../../services/claude_service.dart';
 import '../../domain/models/debt_item.dart';
 import '../../domain/models/obligation_item.dart';
+import '../../domain/models/income_stream.dart';
+import '../../domain/models/expense.dart';
 import '../../domain/models/parsed_finance_input.dart';
 
 class FinanceAiParserService {
@@ -58,13 +60,49 @@ For OBLIGATION entries (recurring payment):
   }
 }
 
+For INCOME entries (recurring income source):
+{
+  "type": "income",
+  "title": "string",
+  "category": "freelance|salary|project|youtube|sponsorship|investment|other",
+  "amount": number,
+  "currency": "USD|KGS",
+  "frequency": "weekly|biweekly|monthly|quarterly|annual",
+  "notes": "string or null",
+  "confidence": {
+    "title": 0.0-1.0,
+    "category": 0.0-1.0,
+    "amount": 0.0-1.0,
+    "frequency": 0.0-1.0
+  }
+}
+
+For EXPENSE entries (one-time spending):
+{
+  "type": "expense",
+  "title": "string",
+  "category": "food|transport|shopping|entertainment|health|education|travel|other",
+  "amount": number,
+  "currency": "USD|KGS",
+  "date": "YYYY-MM-DD",
+  "notes": "string or null",
+  "confidence": {
+    "title": 0.0-1.0,
+    "category": 0.0-1.0,
+    "amount": 0.0-1.0
+  }
+}
+
 If unclear, return: { "type": "unknown" }
 
 Rules:
 - Treat "every month", "monthly", "/mo", "per month" as frequency: monthly
 - Treat "I owe", "borrowed from", "I need to pay back" as debt
 - Treat "I pay X for Y", "my X costs Y/month", "subscription" as obligation
+- Treat "I earn", "I make", "my income", "revenue from", "I get paid" as income
+- Treat "I spent", "I bought", "cost me", "paid for" (one-time) as expense
 - Default currency USD unless user says "som", "сом", "KGS"
+- For expense date: default to today if not specified
 - If due date is relative ("next month", "in 3 months"), compute from today: ''' +
       DateTime.now().toIso8601String().substring(0, 10) +
       '''
@@ -208,6 +246,85 @@ Rules:
       );
     }
 
+    if (type == 'income') {
+      final parsed = ParsedIncome(
+        title: ParsedField(
+          value: data['title'] as String? ?? 'Unnamed income',
+          confidence: c('title'),
+          needsConfirmation: needsConf('title'),
+        ),
+        category: ParsedField(
+          value: _parseIncomeCategory(data['category']),
+          confidence: c('category'),
+          needsConfirmation: needsConf('category'),
+        ),
+        amount: ParsedField(
+          value: (data['amount'] as num?)?.toDouble() ?? 0.0,
+          confidence: c('amount'),
+          needsConfirmation: needsConf('amount') || (data['amount'] == null),
+        ),
+        currency: ParsedField(
+          value: data['currency'] as String? ?? 'USD',
+          confidence: c('currency', fallback: 0.8),
+        ),
+        frequency: ParsedField(
+          value: _parseFrequency(data['frequency']),
+          confidence: c('frequency'),
+          needsConfirmation: needsConf('frequency'),
+        ),
+        notes: data['notes'] as String?,
+      );
+
+      return ParsedFinanceInput(
+        type: ParsedFinanceType.income,
+        income: parsed,
+        rawInput: raw,
+        overallConfidence: _avgConfidence(conf),
+        clarificationMessage: parsed.hasAmbiguity
+            ? 'Please confirm: ${parsed.ambiguousFields.join(', ')}'
+            : null,
+      );
+    }
+
+    if (type == 'expense') {
+      final parsed = ParsedExpense(
+        title: ParsedField(
+          value: data['title'] as String? ?? 'Unnamed expense',
+          confidence: c('title'),
+          needsConfirmation: needsConf('title'),
+        ),
+        amount: ParsedField(
+          value: (data['amount'] as num?)?.toDouble() ?? 0.0,
+          confidence: c('amount'),
+          needsConfirmation: needsConf('amount') || (data['amount'] == null),
+        ),
+        currency: ParsedField(
+          value: data['currency'] as String? ?? 'USD',
+          confidence: c('currency', fallback: 0.8),
+        ),
+        category: ParsedField(
+          value: _parseExpenseCategory(data['category']),
+          confidence: c('category'),
+          needsConfirmation: needsConf('category'),
+        ),
+        date: ParsedField(
+          value: _parseDate(data['date']) ?? DateTime.now(),
+          confidence: c('date', fallback: 0.8),
+        ),
+        notes: data['notes'] as String?,
+      );
+
+      return ParsedFinanceInput(
+        type: ParsedFinanceType.expense,
+        expense: parsed,
+        rawInput: raw,
+        overallConfidence: _avgConfidence(conf),
+        clarificationMessage: parsed.hasAmbiguity
+            ? 'Please confirm: ${parsed.ambiguousFields.join(', ')}'
+            : null,
+      );
+    }
+
     return ParsedFinanceInput.unknown(raw);
   }
 
@@ -247,6 +364,20 @@ Rules:
     return ObligationFrequency.values.firstWhere(
       (e) => e.name == val?.toString(),
       orElse: () => ObligationFrequency.monthly,
+    );
+  }
+
+  IncomeCategory _parseIncomeCategory(dynamic val) {
+    return IncomeCategory.values.firstWhere(
+      (e) => e.name == val?.toString(),
+      orElse: () => IncomeCategory.other,
+    );
+  }
+
+  ExpenseCategory _parseExpenseCategory(dynamic val) {
+    return ExpenseCategory.values.firstWhere(
+      (e) => e.name == val?.toString(),
+      orElse: () => ExpenseCategory.other,
     );
   }
 }

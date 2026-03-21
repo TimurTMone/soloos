@@ -3,10 +3,13 @@ import 'package:provider/provider.dart';
 import '../../../../theme/app_theme.dart';
 import '../../domain/models/debt_item.dart';
 import '../../domain/models/obligation_item.dart';
+import '../../domain/models/income_stream.dart';
+import '../../domain/models/expense.dart';
 import '../viewmodels/finance_view_model.dart';
 import '../widgets/parse_confirm_sheet.dart';
 import '../widgets/quick_add_bar.dart';
 import '../widgets/debt_card.dart';
+import '../widgets/manual_forms.dart';
 
 class FinanceDashboardScreen extends StatelessWidget {
   const FinanceDashboardScreen({super.key});
@@ -27,10 +30,20 @@ class FinanceDashboardScreen extends StatelessWidget {
           Expanded(
             child: CustomScrollView(
               slivers: [
-                _SliverHeader(vm: vm),
+                _CashFlowHeader(vm: vm),
                 if (vm.overdueDebts.isNotEmpty) _SliverOverdueAlert(vm: vm),
                 _SliverSection(title: '💡 Recommended Next Payment', child: _RecommendedCard(vm: vm)),
                 _SliverSection(title: '📅 Due This Week', child: _DueThisWeek(vm: vm)),
+                _SliverSection(
+                  title: '💰 Income Streams',
+                  trailing: '\$${_fmt(vm.totalMonthlyIncome)}/mo',
+                  child: _IncomeList(vm: vm),
+                ),
+                _SliverSection(
+                  title: '💸 Recent Expenses',
+                  trailing: '\$${_fmt(vm.totalMonthlyExpenses)} this month',
+                  child: _ExpenseList(vm: vm),
+                ),
                 _SliverSection(title: '🏋️ Debts', child: _DebtsList(vm: vm)),
                 _SliverSection(title: '📋 Monthly Obligations', child: _ObligationsList(vm: vm)),
                 _SliverSection(
@@ -60,44 +73,53 @@ class FinanceDashboardScreen extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) => _ManualTypePickerSheet(
+      builder: (_) => ManualTypePickerSheet(
         onDebt: () {
           Navigator.pop(context);
-          _showManualDebtForm(context);
+          _showForm(context, (ctx) => ManualDebtForm(
+            onSave: (debt) {
+              ctx.read<FinanceViewModel>().addDebt(debt);
+              Navigator.pop(ctx);
+            },
+          ));
         },
         onObligation: () {
           Navigator.pop(context);
-          _showManualObligationForm(context);
+          _showForm(context, (ctx) => ManualObligationForm(
+            onSave: (o) {
+              ctx.read<FinanceViewModel>().addObligation(o);
+              Navigator.pop(ctx);
+            },
+          ));
+        },
+        onIncome: () {
+          Navigator.pop(context);
+          _showForm(context, (ctx) => ManualIncomeForm(
+            onSave: (income) {
+              ctx.read<FinanceViewModel>().addIncomeStream(income);
+              Navigator.pop(ctx);
+            },
+          ));
+        },
+        onExpense: () {
+          Navigator.pop(context);
+          _showForm(context, (ctx) => ManualExpenseForm(
+            onSave: (expense) {
+              ctx.read<FinanceViewModel>().addExpense(expense);
+              Navigator.pop(ctx);
+            },
+          ));
         },
       ),
     );
   }
 
-  void _showManualDebtForm(BuildContext context) {
+  void _showForm(BuildContext context, Widget Function(BuildContext) builder) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _ManualDebtForm(
-        onSave: (debt) {
-          context.read<FinanceViewModel>().addDebt(debt);
-          Navigator.pop(context);
-        },
-      ),
-    );
-  }
-
-  void _showManualObligationForm(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _ManualObligationForm(
-        onSave: (obligation) {
-          context.read<FinanceViewModel>().addObligation(obligation);
-          Navigator.pop(context);
-        },
-      ),
+      builder: (ctx) => builder(ctx),
     );
   }
 
@@ -117,6 +139,14 @@ class FinanceDashboardScreen extends StatelessWidget {
           Navigator.pop(context);
           vm.confirmParsedObligation(obligation);
         },
+        onConfirmIncome: (income) {
+          Navigator.pop(context);
+          vm.confirmParsedIncome(income);
+        },
+        onConfirmExpense: (expense) {
+          Navigator.pop(context);
+          vm.confirmParsedExpense(expense);
+        },
         onCancel: () {
           Navigator.pop(context);
           vm.clearPendingInput();
@@ -126,14 +156,17 @@ class FinanceDashboardScreen extends StatelessWidget {
   }
 }
 
-// ── Header: hero metrics ────────────────────────────────────────────────────
+// ── Cash flow header ─────────────────────────────────────────────────────────
 
-class _SliverHeader extends StatelessWidget {
+class _CashFlowHeader extends StatelessWidget {
   final FinanceViewModel vm;
-  const _SliverHeader({required this.vm});
+  const _CashFlowHeader({required this.vm});
 
   @override
   Widget build(BuildContext context) {
+    final cashFlow = vm.monthlyCashFlow;
+    final isPositive = cashFlow >= 0;
+
     return SliverToBoxAdapter(
       child: Container(
         margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -169,33 +202,62 @@ class _SliverHeader extends StatelessWidget {
                   ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
+            // Cash flow hero
             Text(
-              '\$${_fmt(vm.totalDebt)}',
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 36,
+              'Monthly Cash Flow',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${isPositive ? '+' : '-'}\$${_fmt(cashFlow.abs())}',
+              style: TextStyle(
+                color: isPositive ? AppColors.accentGreen : AppColors.accentRed,
+                fontSize: 32,
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const Text('total debt remaining',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
             const SizedBox(height: 16),
+            // Metric chips row
             Row(
               children: [
                 _MetricChip(
-                  label: 'Monthly obligations',
+                  label: 'Income',
+                  value: '\$${_fmt(vm.totalMonthlyIncome)}',
+                  color: AppColors.accentGreen,
+                ),
+                const SizedBox(width: 8),
+                _MetricChip(
+                  label: 'Bills',
                   value: '\$${_fmt(vm.totalMonthlyObligations)}',
                   color: AppColors.accentBlue,
                 ),
                 const SizedBox(width: 8),
                 _MetricChip(
-                  label: 'Subscriptions',
-                  value: '\$${_fmt(vm.totalMonthlySubscriptions)}',
+                  label: 'Spent',
+                  value: '\$${_fmt(vm.totalMonthlyExpenses)}',
                   color: AppColors.accent,
                 ),
               ],
             ),
+            if (vm.totalDebt > 0) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  _MetricChip(
+                    label: 'Total Debt',
+                    value: '\$${_fmt(vm.totalDebt)}',
+                    color: AppColors.accentRed,
+                  ),
+                  const SizedBox(width: 8),
+                  _MetricChip(
+                    label: 'Subscriptions',
+                    value: '\$${_fmt(vm.totalMonthlySubscriptions)}/mo',
+                    color: AppColors.primary,
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
@@ -213,19 +275,20 @@ class _MetricChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withOpacity(0.08),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: color.withOpacity(0.2)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(value, style: TextStyle(
-              color: color, fontSize: 16, fontWeight: FontWeight.w700)),
-            Text(label, style: const TextStyle(
-              color: AppColors.textSecondary, fontSize: 10)),
+            Text(label, style: TextStyle(color: color.withOpacity(0.7), fontSize: 10)),
+            const SizedBox(height: 2),
+            Text(value,
+                style: TextStyle(
+                    color: color, fontSize: 14, fontWeight: FontWeight.w600),
+                overflow: TextOverflow.ellipsis),
           ],
         ),
       ),
@@ -233,7 +296,7 @@ class _MetricChip extends StatelessWidget {
   }
 }
 
-// ── Overdue alert ───────────────────────────────────────────────────────────
+// ── Overdue alert ────────────────────────────────────────────────────────────
 
 class _SliverOverdueAlert extends StatelessWidget {
   final FinanceViewModel vm;
@@ -247,22 +310,28 @@ class _SliverOverdueAlert extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: AppColors.accentRed.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(color: AppColors.accentRed.withOpacity(0.3)),
         ),
         child: Row(
           children: [
-            const Text('🚨', style: TextStyle(fontSize: 18)),
+            const Text('🚨', style: TextStyle(fontSize: 20)),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Overdue debts',
-                      style: TextStyle(color: AppColors.accentRed, fontWeight: FontWeight.w600)),
                   Text(
-                    vm.overdueDebts.map((d) => d.title).join(', '),
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                    '${vm.overdueDebts.length} overdue debt${vm.overdueDebts.length > 1 ? 's' : ''}',
+                    style: const TextStyle(
+                        color: AppColors.accentRed,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14),
+                  ),
+                  Text(
+                    'Total: \$${_fmt(vm.overdueDebts.fold(0.0, (s, d) => s + d.remainingAmount))}',
+                    style: const TextStyle(
+                        color: AppColors.textSecondary, fontSize: 12),
                   ),
                 ],
               ),
@@ -274,7 +343,7 @@ class _SliverOverdueAlert extends StatelessWidget {
   }
 }
 
-// ── Section wrapper ─────────────────────────────────────────────────────────
+// ── Section wrapper ──────────────────────────────────────────────────────────
 
 class _SliverSection extends StatelessWidget {
   final String title;
@@ -295,18 +364,16 @@ class _SliverSection extends StatelessWidget {
               children: [
                 Text(title,
                     style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
-                    )),
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600)),
                 if (trailing != null)
                   Text(trailing!,
                       style: const TextStyle(
-                          color: AppColors.textMuted, fontSize: 12)),
+                          color: AppColors.textSecondary, fontSize: 12)),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             child,
           ],
         ),
@@ -315,7 +382,7 @@ class _SliverSection extends StatelessWidget {
   }
 }
 
-// ── Recommended next payment ────────────────────────────────────────────────
+// ── Recommended card ─────────────────────────────────────────────────────────
 
 class _RecommendedCard extends StatelessWidget {
   final FinanceViewModel vm;
@@ -323,60 +390,51 @@ class _RecommendedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final debt = vm.recommendedNextPayment;
-    if (debt == null) {
-      return const _EmptyState(icon: '✅', message: 'No active debts — great work!');
+    final rec = vm.recommendedNextPayment;
+    if (rec == null) {
+      return const _EmptyState(icon: '✅', message: 'No payments due');
     }
-
-    final goal = debt.monthlyPaymentGoal;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.accentGreen.withOpacity(0.08),
+        color: AppColors.primary.withOpacity(0.08),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.accentGreen.withOpacity(0.25)),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
       ),
       child: Row(
         children: [
-          const Text('🎯', style: TextStyle(fontSize: 28)),
+          Text(rec.category.emoji, style: const TextStyle(fontSize: 22)),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(debt.title,
+                Text(rec.title,
                     style: const TextStyle(
                         color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15)),
-                const SizedBox(height: 2),
+                        fontWeight: FontWeight.w600)),
                 Text(
-                  '${debt.creditorName} · ${debt.category.emoji} ${debt.category.label}',
+                  rec.dueDate != null
+                      ? 'Due ${rec.dueDate!.month}/${rec.dueDate!.day}'
+                      : 'No due date',
                   style: const TextStyle(
                       color: AppColors.textSecondary, fontSize: 12),
                 ),
-                if (goal != null) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    'Pay \$${_fmt(goal)} this month',
-                    style: const TextStyle(
-                        color: AppColors.accentGreen, fontSize: 13),
-                  ),
-                ],
               ],
             ),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('\$${_fmt(debt.remainingAmount)}',
+              Text('\$${_fmt(rec.remainingAmount)}',
                   style: const TextStyle(
-                      color: AppColors.textPrimary,
+                      color: AppColors.primary,
                       fontWeight: FontWeight.w700,
                       fontSize: 16)),
-              const Text('remaining',
-                  style: TextStyle(
-                      color: AppColors.textSecondary, fontSize: 11)),
+              if (rec.monthlyPaymentGoal != null)
+                Text('\$${_fmt(rec.monthlyPaymentGoal!)}/mo',
+                    style: const TextStyle(
+                        color: AppColors.textSecondary, fontSize: 11)),
             ],
           ),
         ],
@@ -385,7 +443,7 @@ class _RecommendedCard extends StatelessWidget {
   }
 }
 
-// ── Due this week ───────────────────────────────────────────────────────────
+// ── Due this week ────────────────────────────────────────────────────────────
 
 class _DueThisWeek extends StatelessWidget {
   final FinanceViewModel vm;
@@ -393,50 +451,27 @@ class _DueThisWeek extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = [
-      ...vm.dueThisWeekDebts.map((d) => _DueItem(
-            title: d.title,
-            amount: d.remainingAmount,
-            currency: d.currency,
-            dueDate: d.dueDate!,
-            isDebt: true,
-          )),
+    final items = <_DueItem>[
+      ...vm.dueThisWeekDebts.map((d) => _DueItem(d.category.emoji, d.title,
+          '\$${_fmt(d.remainingAmount)}', 'debt')),
       ...vm.obligationsDueThisWeek.map((o) => _DueItem(
-            title: o.title,
-            amount: o.amount,
-            currency: o.currency,
-            dueDate: o.nextDueDate!,
-            isDebt: false,
-          )),
+          o.category.emoji, o.title, '\$${_fmt(o.amount)}', 'obligation')),
     ];
-
     if (items.isEmpty) {
-      return const _EmptyState(icon: '🗓️', message: 'Nothing due this week');
+      return const _EmptyState(icon: '📅', message: 'Nothing due this week');
     }
-
-    items.sort((a, b) => a.dueDate.compareTo(b.dueDate));
-
     return Column(
-      children: items
-          .map((item) => _DueThisWeekTile(item: item))
-          .toList(),
+      children: items.map((i) => _DueThisWeekTile(item: i)).toList(),
     );
   }
 }
 
 class _DueItem {
+  final String emoji;
   final String title;
-  final double amount;
-  final String currency;
-  final DateTime dueDate;
-  final bool isDebt;
-  const _DueItem({
-    required this.title,
-    required this.amount,
-    required this.currency,
-    required this.dueDate,
-    required this.isDebt,
-  });
+  final String amount;
+  final String type;
+  _DueItem(this.emoji, this.title, this.amount, this.type);
 }
 
 class _DueThisWeekTile extends StatelessWidget {
@@ -445,38 +480,89 @@ class _DueThisWeekTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final daysLeft = item.dueDate.difference(DateTime.now()).inDays;
-    final urgentColor = daysLeft <= 2 ? AppColors.accentRed : AppColors.accent;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Text(item.emoji, style: const TextStyle(fontSize: 16)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(item.title,
+                style: const TextStyle(
+                    color: AppColors.textPrimary, fontSize: 13)),
+          ),
+          Text(item.amount,
+              style: const TextStyle(
+                  color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+}
 
+// ── Income list ──────────────────────────────────────────────────────────────
+
+class _IncomeList extends StatelessWidget {
+  final FinanceViewModel vm;
+  const _IncomeList({required this.vm});
+
+  @override
+  Widget build(BuildContext context) {
+    if (vm.activeIncomeStreams.isEmpty) {
+      return const _EmptyState(icon: '💰', message: 'No income streams added');
+    }
+    return Column(
+      children: vm.activeIncomeStreams.map((i) => _IncomeTile(income: i)).toList(),
+    );
+  }
+}
+
+class _IncomeTile extends StatelessWidget {
+  final IncomeStream income;
+  const _IncomeTile({required this.income});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: AppColors.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: urgentColor.withOpacity(0.2)),
       ),
       child: Row(
         children: [
-          Text(item.isDebt ? '💳' : '📋',
-              style: const TextStyle(fontSize: 16)),
+          Text(income.category.emoji, style: const TextStyle(fontSize: 16)),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(item.title,
-                style: const TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(income.title,
+                    style: const TextStyle(
+                        color: AppColors.textPrimary, fontSize: 14)),
+                Text(income.frequency.label,
+                    style: const TextStyle(
+                        color: AppColors.textSecondary, fontSize: 11)),
+              ],
+            ),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('\$${_fmt(item.amount)}',
+              Text('+\$${_fmt(income.amount)}',
                   style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14)),
-              Text(
-                daysLeft == 0 ? 'Today' : 'In $daysLeft days',
-                style: TextStyle(color: urgentColor, fontSize: 11),
-              ),
+                      color: AppColors.accentGreen,
+                      fontWeight: FontWeight.w600)),
+              if (income.frequency != ObligationFrequency.monthly)
+                Text('\$${_fmt(income.monthlyIncome)}/mo',
+                    style: const TextStyle(
+                        color: AppColors.textSecondary, fontSize: 11)),
             ],
           ),
         ],
@@ -485,7 +571,68 @@ class _DueThisWeekTile extends StatelessWidget {
   }
 }
 
-// ── Debts list ──────────────────────────────────────────────────────────────
+// ── Expense list ─────────────────────────────────────────────────────────────
+
+class _ExpenseList extends StatelessWidget {
+  final FinanceViewModel vm;
+  const _ExpenseList({required this.vm});
+
+  @override
+  Widget build(BuildContext context) {
+    final recent = vm.thisMonthExpenses;
+    if (recent.isEmpty) {
+      return const _EmptyState(icon: '💸', message: 'No expenses this month');
+    }
+    // Show latest 5
+    final shown = recent.length > 5 ? recent.sublist(recent.length - 5) : recent;
+    return Column(
+      children: shown.reversed.map((e) => _ExpenseTile(expense: e)).toList(),
+    );
+  }
+}
+
+class _ExpenseTile extends StatelessWidget {
+  final Expense expense;
+  const _ExpenseTile({required this.expense});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Text(expense.category.emoji, style: const TextStyle(fontSize: 16)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(expense.title,
+                    style: const TextStyle(
+                        color: AppColors.textPrimary, fontSize: 14)),
+                Text(
+                  '${expense.date.month}/${expense.date.day}',
+                  style: const TextStyle(
+                      color: AppColors.textSecondary, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+          Text('-\$${_fmt(expense.amount)}',
+              style: const TextStyle(
+                  color: AppColors.accentRed, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Debts list ───────────────────────────────────────────────────────────────
 
 class _DebtsList extends StatelessWidget {
   final FinanceViewModel vm;
@@ -494,9 +641,8 @@ class _DebtsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (vm.activeDebts.isEmpty) {
-      return const _EmptyState(icon: '🎉', message: 'No active debts');
+      return const _EmptyState(icon: '✅', message: 'No active debts');
     }
-
     return Column(
       children: vm.activeDebts
           .map((debt) => DebtCard(
@@ -519,18 +665,14 @@ class _ObligationsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final nonSubs = activeObligationsNonSub(vm);
+    final nonSubs = vm.activeObligations.where((o) => !o.isSubscription).toList();
     if (nonSubs.isEmpty) {
       return const _EmptyState(icon: '📋', message: 'No obligations added');
     }
-
     return Column(
       children: nonSubs.map((o) => _ObligationTile(o: o)).toList(),
     );
   }
-
-  List<ObligationItem> activeObligationsNonSub(FinanceViewModel vm) =>
-      vm.activeObligations.where((o) => !o.isSubscription).toList();
 }
 
 // ── Subscriptions list ──────────────────────────────────────────────────────
@@ -544,7 +686,6 @@ class _SubscriptionsList extends StatelessWidget {
     if (vm.subscriptions.isEmpty) {
       return const _EmptyState(icon: '📱', message: 'No subscriptions');
     }
-
     return Column(
       children: vm.subscriptions.map((o) => _ObligationTile(o: o)).toList(),
     );
@@ -627,537 +768,6 @@ class _EmptyState extends StatelessWidget {
     );
   }
 }
-
-// ── Manual add type picker ───────────────────────────────────────────────────
-
-class _ManualTypePickerSheet extends StatelessWidget {
-  final VoidCallback onDebt;
-  final VoidCallback onObligation;
-  const _ManualTypePickerSheet(
-      {required this.onDebt, required this.onObligation});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      padding: EdgeInsets.fromLTRB(
-          20, 16, 20, MediaQuery.of(context).padding.bottom + 20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 36, height: 4,
-            decoration: BoxDecoration(
-                color: AppColors.textMuted,
-                borderRadius: BorderRadius.circular(2)),
-          ),
-          const SizedBox(height: 16),
-          const Text('Add to Finance',
-              style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w600)),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: _TypeButton(
-                  icon: '💳',
-                  label: 'Debt',
-                  subtitle: 'I owe someone money',
-                  color: AppColors.accentRed,
-                  onTap: onDebt,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _TypeButton(
-                  icon: '📋',
-                  label: 'Obligation',
-                  subtitle: 'Recurring payment',
-                  color: AppColors.accentBlue,
-                  onTap: onObligation,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TypeButton extends StatelessWidget {
-  final String icon;
-  final String label;
-  final String subtitle;
-  final Color color;
-  final VoidCallback onTap;
-  const _TypeButton(
-      {required this.icon,
-      required this.label,
-      required this.subtitle,
-      required this.color,
-      required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
-        child: Column(
-          children: [
-            Text(icon, style: const TextStyle(fontSize: 28)),
-            const SizedBox(height: 8),
-            Text(label,
-                style: TextStyle(
-                    color: color,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600)),
-            const SizedBox(height: 4),
-            Text(subtitle,
-                style: const TextStyle(
-                    color: AppColors.textSecondary, fontSize: 11),
-                textAlign: TextAlign.center),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Manual debt form ─────────────────────────────────────────────────────────
-
-class _ManualDebtForm extends StatefulWidget {
-  final void Function(DebtItem) onSave;
-  const _ManualDebtForm({required this.onSave});
-
-  @override
-  State<_ManualDebtForm> createState() => _ManualDebtFormState();
-}
-
-class _ManualDebtFormState extends State<_ManualDebtForm> {
-  final _titleCtrl = TextEditingController();
-  final _creditorCtrl = TextEditingController();
-  final _amountCtrl = TextEditingController();
-  DebtCategory _category = DebtCategory.other;
-  DebtPriority _priority = DebtPriority.medium;
-  String _currency = 'USD';
-  DateTime? _dueDate;
-
-  @override
-  void dispose() {
-    _titleCtrl.dispose();
-    _creditorCtrl.dispose();
-    _amountCtrl.dispose();
-    super.dispose();
-  }
-
-  void _save() {
-    final title = _titleCtrl.text.trim();
-    final amount = double.tryParse(_amountCtrl.text.trim()) ?? 0;
-    if (title.isEmpty || amount <= 0) return;
-    widget.onSave(DebtItem(
-      title: title,
-      creditorName: _creditorCtrl.text.trim(),
-      category: _category,
-      originalAmount: amount,
-      currency: _currency,
-      dueDate: _dueDate,
-      priority: _priority,
-    ));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        padding: EdgeInsets.fromLTRB(
-            20, 16, 20, MediaQuery.of(context).padding.bottom + 20),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 36, height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                      color: AppColors.textMuted,
-                      borderRadius: BorderRadius.circular(2)),
-                ),
-              ),
-              const Text('💳 Add Debt',
-                  style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600)),
-              const SizedBox(height: 16),
-              _label('Title *'),
-              TextField(
-                controller: _titleCtrl,
-                autofocus: true,
-                style: const TextStyle(color: AppColors.textPrimary),
-                decoration:
-                    const InputDecoration(hintText: 'e.g. Student Loan'),
-              ),
-              const SizedBox(height: 12),
-              _label('Creditor / Who you owe'),
-              TextField(
-                controller: _creditorCtrl,
-                style: const TextStyle(color: AppColors.textPrimary),
-                decoration: const InputDecoration(hintText: 'e.g. Bank, John'),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _label('Amount *'),
-                        TextField(
-                          controller: _amountCtrl,
-                          keyboardType: TextInputType.number,
-                          style:
-                              const TextStyle(color: AppColors.textPrimary),
-                          decoration:
-                              const InputDecoration(hintText: '0'),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _label('Currency'),
-                      DropdownButton<String>(
-                        value: _currency,
-                        dropdownColor: AppColors.card,
-                        style: const TextStyle(
-                            color: AppColors.textPrimary, fontSize: 14),
-                        underline: const SizedBox(),
-                        items: ['USD', 'KGS'].map((c) => DropdownMenuItem(
-                              value: c,
-                              child: Text(c),
-                            )).toList(),
-                        onChanged: (v) =>
-                            setState(() => _currency = v ?? 'USD'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              _label('Category'),
-              DropdownButtonFormField<DebtCategory>(
-                value: _category,
-                decoration: const InputDecoration(isDense: true),
-                dropdownColor: AppColors.card,
-                style:
-                    const TextStyle(color: AppColors.textPrimary, fontSize: 14),
-                items: DebtCategory.values
-                    .map((c) => DropdownMenuItem(
-                          value: c,
-                          child: Text('${c.emoji} ${c.label}'),
-                        ))
-                    .toList(),
-                onChanged: (v) => setState(() => _category = v ?? _category),
-              ),
-              const SizedBox(height: 12),
-              _label('Priority'),
-              Row(
-                children: DebtPriority.values.map((p) {
-                  final selected = _priority == p;
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _priority = p),
-                      child: Container(
-                        margin: EdgeInsets.only(
-                            right: p != DebtPriority.high ? 8 : 0),
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        decoration: BoxDecoration(
-                          color: selected
-                              ? AppColors.primary.withOpacity(0.2)
-                              : AppColors.surface,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                              color: selected
-                                  ? AppColors.primary
-                                  : AppColors.textMuted),
-                        ),
-                        child: Text(
-                          p.name[0].toUpperCase() + p.name.substring(1),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              color: selected
-                                  ? AppColors.primary
-                                  : AppColors.textSecondary,
-                              fontSize: 12),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 12),
-              _label('Due Date (optional)'),
-              GestureDetector(
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now().add(const Duration(days: 30)),
-                    firstDate: DateTime.now(),
-                    lastDate:
-                        DateTime.now().add(const Duration(days: 365 * 10)),
-                    builder: (ctx, child) => Theme(
-                      data: ThemeData.dark().copyWith(
-                        colorScheme: const ColorScheme.dark(
-                            primary: AppColors.primary),
-                      ),
-                      child: child!,
-                    ),
-                  );
-                  if (picked != null) setState(() => _dueDate = picked);
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.textMuted),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.calendar_today,
-                          size: 14, color: AppColors.textSecondary),
-                      const SizedBox(width: 8),
-                      Text(
-                        _dueDate != null
-                            ? '${_dueDate!.month}/${_dueDate!.day}/${_dueDate!.year}'
-                            : 'Set due date',
-                        style: TextStyle(
-                            color: _dueDate != null
-                                ? AppColors.textPrimary
-                                : AppColors.textMuted,
-                            fontSize: 13),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _save,
-                  style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12))),
-                  child: const Text('Save Debt'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Manual obligation form ───────────────────────────────────────────────────
-
-class _ManualObligationForm extends StatefulWidget {
-  final void Function(ObligationItem) onSave;
-  const _ManualObligationForm({required this.onSave});
-
-  @override
-  State<_ManualObligationForm> createState() => _ManualObligationFormState();
-}
-
-class _ManualObligationFormState extends State<_ManualObligationForm> {
-  final _titleCtrl = TextEditingController();
-  final _amountCtrl = TextEditingController();
-  ObligationCategory _category = ObligationCategory.other;
-  ObligationFrequency _frequency = ObligationFrequency.monthly;
-  String _currency = 'USD';
-
-  @override
-  void dispose() {
-    _titleCtrl.dispose();
-    _amountCtrl.dispose();
-    super.dispose();
-  }
-
-  void _save() {
-    final title = _titleCtrl.text.trim();
-    final amount = double.tryParse(_amountCtrl.text.trim()) ?? 0;
-    if (title.isEmpty || amount <= 0) return;
-    widget.onSave(ObligationItem(
-      title: title,
-      category: _category,
-      amount: amount,
-      currency: _currency,
-      frequency: _frequency,
-    ));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        padding: EdgeInsets.fromLTRB(
-            20, 16, 20, MediaQuery.of(context).padding.bottom + 20),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 36, height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                      color: AppColors.textMuted,
-                      borderRadius: BorderRadius.circular(2)),
-                ),
-              ),
-              const Text('📋 Add Obligation',
-                  style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600)),
-              const SizedBox(height: 16),
-              _label('Title *'),
-              TextField(
-                controller: _titleCtrl,
-                autofocus: true,
-                style: const TextStyle(color: AppColors.textPrimary),
-                decoration:
-                    const InputDecoration(hintText: 'e.g. Spotify, Rent'),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _label('Amount *'),
-                        TextField(
-                          controller: _amountCtrl,
-                          keyboardType: TextInputType.number,
-                          style:
-                              const TextStyle(color: AppColors.textPrimary),
-                          decoration:
-                              const InputDecoration(hintText: '0'),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _label('Currency'),
-                      DropdownButton<String>(
-                        value: _currency,
-                        dropdownColor: AppColors.card,
-                        style: const TextStyle(
-                            color: AppColors.textPrimary, fontSize: 14),
-                        underline: const SizedBox(),
-                        items: ['USD', 'KGS'].map((c) => DropdownMenuItem(
-                              value: c,
-                              child: Text(c),
-                            )).toList(),
-                        onChanged: (v) =>
-                            setState(() => _currency = v ?? 'USD'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              _label('Category'),
-              DropdownButtonFormField<ObligationCategory>(
-                value: _category,
-                decoration: const InputDecoration(isDense: true),
-                dropdownColor: AppColors.card,
-                style:
-                    const TextStyle(color: AppColors.textPrimary, fontSize: 14),
-                items: ObligationCategory.values
-                    .map((c) => DropdownMenuItem(
-                          value: c,
-                          child: Text('${c.emoji} ${c.label}'),
-                        ))
-                    .toList(),
-                onChanged: (v) => setState(() => _category = v ?? _category),
-              ),
-              const SizedBox(height: 12),
-              _label('Frequency'),
-              DropdownButtonFormField<ObligationFrequency>(
-                value: _frequency,
-                decoration: const InputDecoration(isDense: true),
-                dropdownColor: AppColors.card,
-                style:
-                    const TextStyle(color: AppColors.textPrimary, fontSize: 14),
-                items: ObligationFrequency.values
-                    .map((f) => DropdownMenuItem(
-                          value: f,
-                          child: Text(f.label),
-                        ))
-                    .toList(),
-                onChanged: (v) => setState(() => _frequency = v ?? _frequency),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _save,
-                  style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12))),
-                  child: const Text('Save Obligation'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-Widget _label(String text) => Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Text(text,
-          style: const TextStyle(
-              color: AppColors.textSecondary, fontSize: 12)),
-    );
 
 String _fmt(double v) {
   if (v >= 1000000) return '${(v / 1000000).toStringAsFixed(1)}M';

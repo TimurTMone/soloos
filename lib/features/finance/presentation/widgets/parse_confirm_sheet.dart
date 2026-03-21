@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import '../../../../theme/app_theme.dart';
 import '../../domain/models/debt_item.dart';
 import '../../domain/models/obligation_item.dart';
+import '../../domain/models/income_stream.dart';
+import '../../domain/models/expense.dart';
 import '../../domain/models/parsed_finance_input.dart';
 
 class ParseConfirmSheet extends StatefulWidget {
   final ParsedFinanceInput parsed;
   final void Function(DebtItem) onConfirmDebt;
   final void Function(ObligationItem) onConfirmObligation;
+  final void Function(IncomeStream) onConfirmIncome;
+  final void Function(Expense) onConfirmExpense;
   final VoidCallback onCancel;
 
   const ParseConfirmSheet({
@@ -15,6 +19,8 @@ class ParseConfirmSheet extends StatefulWidget {
     required this.parsed,
     required this.onConfirmDebt,
     required this.onConfirmObligation,
+    required this.onConfirmIncome,
+    required this.onConfirmExpense,
     required this.onCancel,
   });
 
@@ -23,7 +29,6 @@ class ParseConfirmSheet extends StatefulWidget {
 }
 
 class _ParseConfirmSheetState extends State<ParseConfirmSheet> {
-  // Mutable state for user edits
   late String _title;
   late double _amount;
   late String _currency;
@@ -39,6 +44,14 @@ class _ParseConfirmSheetState extends State<ParseConfirmSheet> {
   ObligationCategory? _obligationCategory;
   ObligationFrequency? _frequency;
   int? _dueDayOfMonth;
+
+  // Income-specific
+  IncomeCategory? _incomeCategory;
+  ObligationFrequency? _incomeFrequency;
+
+  // Expense-specific
+  ExpenseCategory? _expenseCategory;
+  DateTime? _expenseDate;
 
   @override
   void initState() {
@@ -62,6 +75,20 @@ class _ParseConfirmSheetState extends State<ParseConfirmSheet> {
       _obligationCategory = o.category.value;
       _frequency = o.frequency.value;
       _dueDayOfMonth = o.dueDayOfMonth.value;
+    } else if (p.isIncome) {
+      final i = p.income!;
+      _title = i.title.value;
+      _amount = i.amount.value;
+      _currency = i.currency.value;
+      _incomeCategory = i.category.value;
+      _incomeFrequency = i.frequency.value;
+    } else if (p.isExpense) {
+      final e = p.expense!;
+      _title = e.title.value;
+      _amount = e.amount.value;
+      _currency = e.currency.value;
+      _expenseCategory = e.category.value;
+      _expenseDate = e.date.value;
     } else {
       _title = '';
       _amount = 0;
@@ -117,6 +144,8 @@ class _ParseConfirmSheetState extends State<ParseConfirmSheet> {
     final p = widget.parsed;
     if (p.isDebt) return _buildDebtFields(p.debt!);
     if (p.isObligation) return _buildObligationFields(p.obligation!);
+    if (p.isIncome) return _buildIncomeFields(p.income!);
+    if (p.isExpense) return _buildExpenseFields(p.expense!);
     return const Center(
       child: Text(
         "Couldn't understand that. Try again with more detail.",
@@ -131,34 +160,23 @@ class _ParseConfirmSheetState extends State<ParseConfirmSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _FieldRow(
-          label: 'Title',
-          uncertain: d.title.needsConfirmation,
-          child: _EditableText(
-            value: _title,
-            onChanged: (v) => setState(() => _title = v),
-          ),
+          label: 'Title', uncertain: d.title.needsConfirmation,
+          child: _EditableText(value: _title, onChanged: (v) => setState(() => _title = v)),
         ),
         _FieldRow(
-          label: 'Creditor',
-          uncertain: d.creditorName.needsConfirmation,
-          child: _EditableText(
-            value: _creditorName ?? '',
-            onChanged: (v) => setState(() => _creditorName = v),
-          ),
+          label: 'Creditor', uncertain: d.creditorName.needsConfirmation,
+          child: _EditableText(value: _creditorName ?? '', onChanged: (v) => setState(() => _creditorName = v)),
         ),
         _FieldRow(
-          label: 'Amount',
-          uncertain: d.amount.needsConfirmation,
+          label: 'Amount', uncertain: d.amount.needsConfirmation,
           child: _EditableAmount(
-            amount: _amount,
-            currency: _currency,
+            amount: _amount, currency: _currency,
             onAmountChanged: (v) => setState(() => _amount = v),
             onCurrencyChanged: (v) => setState(() => _currency = v),
           ),
         ),
         _FieldRow(
-          label: 'Category',
-          uncertain: d.category.needsConfirmation,
+          label: 'Category', uncertain: d.category.needsConfirmation,
           child: _CategoryDropdown<DebtCategory>(
             value: _debtCategory ?? DebtCategory.other,
             values: DebtCategory.values,
@@ -167,8 +185,7 @@ class _ParseConfirmSheetState extends State<ParseConfirmSheet> {
           ),
         ),
         _FieldRow(
-          label: 'Priority',
-          uncertain: d.priority.needsConfirmation,
+          label: 'Priority', uncertain: d.priority.needsConfirmation,
           child: _SegmentedPicker(
             options: ['Low', 'Medium', 'High'],
             selected: _priority?.index ?? 1,
@@ -177,12 +194,8 @@ class _ParseConfirmSheetState extends State<ParseConfirmSheet> {
         ),
         if (_dueDate != null || d.dueDate.needsConfirmation)
           _FieldRow(
-            label: 'Due Date',
-            uncertain: d.dueDate.needsConfirmation,
-            child: _DatePicker(
-              date: _dueDate,
-              onChanged: (v) => setState(() => _dueDate = v),
-            ),
+            label: 'Due Date', uncertain: d.dueDate.needsConfirmation,
+            child: _DatePicker(date: _dueDate, onChanged: (v) => setState(() => _dueDate = v)),
           ),
       ],
     );
@@ -193,16 +206,11 @@ class _ParseConfirmSheetState extends State<ParseConfirmSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _FieldRow(
-          label: 'Title',
-          uncertain: o.title.needsConfirmation,
-          child: _EditableText(
-            value: _title,
-            onChanged: (v) => setState(() => _title = v),
-          ),
+          label: 'Title', uncertain: o.title.needsConfirmation,
+          child: _EditableText(value: _title, onChanged: (v) => setState(() => _title = v)),
         ),
         _FieldRow(
-          label: 'Category',
-          uncertain: o.category.needsConfirmation,
+          label: 'Category', uncertain: o.category.needsConfirmation,
           child: _CategoryDropdown<ObligationCategory>(
             value: _obligationCategory ?? ObligationCategory.other,
             values: ObligationCategory.values,
@@ -211,18 +219,15 @@ class _ParseConfirmSheetState extends State<ParseConfirmSheet> {
           ),
         ),
         _FieldRow(
-          label: 'Amount',
-          uncertain: o.amount.needsConfirmation,
+          label: 'Amount', uncertain: o.amount.needsConfirmation,
           child: _EditableAmount(
-            amount: _amount,
-            currency: _currency,
+            amount: _amount, currency: _currency,
             onAmountChanged: (v) => setState(() => _amount = v),
             onCurrencyChanged: (v) => setState(() => _currency = v),
           ),
         ),
         _FieldRow(
-          label: 'Frequency',
-          uncertain: o.frequency.needsConfirmation,
+          label: 'Frequency', uncertain: o.frequency.needsConfirmation,
           child: _CategoryDropdown<ObligationFrequency>(
             value: _frequency ?? ObligationFrequency.monthly,
             values: ObligationFrequency.values,
@@ -234,10 +239,85 @@ class _ParseConfirmSheetState extends State<ParseConfirmSheet> {
     );
   }
 
+  Widget _buildIncomeFields(ParsedIncome i) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _FieldRow(
+          label: 'Title', uncertain: i.title.needsConfirmation,
+          child: _EditableText(value: _title, onChanged: (v) => setState(() => _title = v)),
+        ),
+        _FieldRow(
+          label: 'Category', uncertain: i.category.needsConfirmation,
+          child: _CategoryDropdown<IncomeCategory>(
+            value: _incomeCategory ?? IncomeCategory.other,
+            values: IncomeCategory.values,
+            label: (c) => '${c.emoji} ${c.label}',
+            onChanged: (v) => setState(() => _incomeCategory = v),
+          ),
+        ),
+        _FieldRow(
+          label: 'Amount', uncertain: i.amount.needsConfirmation,
+          child: _EditableAmount(
+            amount: _amount, currency: _currency,
+            onAmountChanged: (v) => setState(() => _amount = v),
+            onCurrencyChanged: (v) => setState(() => _currency = v),
+          ),
+        ),
+        _FieldRow(
+          label: 'Frequency', uncertain: i.frequency.needsConfirmation,
+          child: _CategoryDropdown<ObligationFrequency>(
+            value: _incomeFrequency ?? ObligationFrequency.monthly,
+            values: ObligationFrequency.values,
+            label: (f) => f.label,
+            onChanged: (v) => setState(() => _incomeFrequency = v),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExpenseFields(ParsedExpense e) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _FieldRow(
+          label: 'Title', uncertain: e.title.needsConfirmation,
+          child: _EditableText(value: _title, onChanged: (v) => setState(() => _title = v)),
+        ),
+        _FieldRow(
+          label: 'Category', uncertain: e.category.needsConfirmation,
+          child: _CategoryDropdown<ExpenseCategory>(
+            value: _expenseCategory ?? ExpenseCategory.other,
+            values: ExpenseCategory.values,
+            label: (c) => '${c.emoji} ${c.label}',
+            onChanged: (v) => setState(() => _expenseCategory = v),
+          ),
+        ),
+        _FieldRow(
+          label: 'Amount', uncertain: e.amount.needsConfirmation,
+          child: _EditableAmount(
+            amount: _amount, currency: _currency,
+            onAmountChanged: (v) => setState(() => _amount = v),
+            onCurrencyChanged: (v) => setState(() => _currency = v),
+          ),
+        ),
+        _FieldRow(
+          label: 'Date', uncertain: false,
+          child: _DatePicker(
+            date: _expenseDate,
+            onChanged: (v) { if (v != null) setState(() => _expenseDate = v); },
+            allowPast: true,
+          ),
+        ),
+      ],
+    );
+  }
+
   void _handleConfirm() {
     final p = widget.parsed;
     if (p.isDebt) {
-      final debt = DebtItem(
+      widget.onConfirmDebt(DebtItem(
         title: _title,
         creditorName: _creditorName ?? '',
         category: _debtCategory ?? DebtCategory.other,
@@ -246,18 +326,32 @@ class _ParseConfirmSheetState extends State<ParseConfirmSheet> {
         dueDate: _dueDate,
         monthlyPaymentGoal: _monthlyPaymentGoal,
         priority: _priority ?? DebtPriority.medium,
-      );
-      widget.onConfirmDebt(debt);
+      ));
     } else if (p.isObligation) {
-      final obligation = ObligationItem(
+      widget.onConfirmObligation(ObligationItem(
         title: _title,
         category: _obligationCategory ?? ObligationCategory.other,
         amount: _amount,
         currency: _currency,
         frequency: _frequency ?? ObligationFrequency.monthly,
         dueDayOfMonth: _dueDayOfMonth,
-      );
-      widget.onConfirmObligation(obligation);
+      ));
+    } else if (p.isIncome) {
+      widget.onConfirmIncome(IncomeStream(
+        title: _title,
+        category: _incomeCategory ?? IncomeCategory.other,
+        amount: _amount,
+        currency: _currency,
+        frequency: _incomeFrequency ?? ObligationFrequency.monthly,
+      ));
+    } else if (p.isExpense) {
+      widget.onConfirmExpense(Expense(
+        title: _title,
+        amount: _amount,
+        currency: _currency,
+        category: _expenseCategory ?? ExpenseCategory.other,
+        date: _expenseDate ?? DateTime.now(),
+      ));
     }
   }
 }
@@ -271,16 +365,14 @@ class _SheetHandle extends StatelessWidget {
       children: [
         const SizedBox(height: 12),
         Container(
-          width: 36,
-          height: 4,
+          width: 36, height: 4,
           decoration: BoxDecoration(
             color: AppColors.textMuted,
             borderRadius: BorderRadius.circular(2),
           ),
         ),
         const SizedBox(height: 16),
-        const Text(
-          'Confirm & Save',
+        const Text('Confirm & Save',
           style: TextStyle(
             color: AppColors.textPrimary,
             fontSize: 17,
@@ -302,6 +394,8 @@ class _TypeBadge extends StatelessWidget {
     final (label, color) = switch (type) {
       ParsedFinanceType.debt => ('💳 Debt', AppColors.accentRed),
       ParsedFinanceType.obligation => ('📋 Obligation', AppColors.accentBlue),
+      ParsedFinanceType.income => ('💰 Income', AppColors.accentGreen),
+      ParsedFinanceType.expense => ('💸 Expense', AppColors.accent),
       _ => ('❓ Unknown', AppColors.textMuted),
     };
     return Container(
@@ -329,8 +423,7 @@ class _AmbiguityBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppColors.accent.withOpacity(0.3)),
       ),
-      child: Text(
-        '⚠️ $message',
+      child: Text('⚠️ $message',
         style: const TextStyle(color: AppColors.accent, fontSize: 12),
       ),
     );
@@ -341,8 +434,7 @@ class _FieldRow extends StatelessWidget {
   final String label;
   final bool uncertain;
   final Widget child;
-  const _FieldRow(
-      {required this.label, required this.uncertain, required this.child});
+  const _FieldRow({required this.label, required this.uncertain, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -354,14 +446,12 @@ class _FieldRow extends StatelessWidget {
           Row(
             children: [
               Text(label,
-                  style: const TextStyle(
-                      color: AppColors.textSecondary, fontSize: 12)),
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
               if (uncertain)
                 const Padding(
                   padding: EdgeInsets.only(left: 6),
                   child: Text('• needs confirmation',
-                      style: TextStyle(
-                          color: AppColors.accent, fontSize: 10)),
+                      style: TextStyle(color: AppColors.accent, fontSize: 10)),
                 ),
             ],
           ),
@@ -492,18 +582,14 @@ class _SegmentedPicker extends StatelessWidget {
                     : AppColors.surface,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: isSelected
-                      ? AppColors.primary
-                      : AppColors.textMuted,
+                  color: isSelected ? AppColors.primary : AppColors.textMuted,
                 ),
               ),
               child: Text(
                 options[i],
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: isSelected
-                      ? AppColors.primary
-                      : AppColors.textSecondary,
+                  color: isSelected ? AppColors.primary : AppColors.textSecondary,
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 ),
@@ -519,7 +605,8 @@ class _SegmentedPicker extends StatelessWidget {
 class _DatePicker extends StatelessWidget {
   final DateTime? date;
   final void Function(DateTime?) onChanged;
-  const _DatePicker({required this.date, required this.onChanged});
+  final bool allowPast;
+  const _DatePicker({required this.date, required this.onChanged, this.allowPast = false});
 
   @override
   Widget build(BuildContext context) {
@@ -528,7 +615,9 @@ class _DatePicker extends StatelessWidget {
         final picked = await showDatePicker(
           context: context,
           initialDate: date ?? DateTime.now().add(const Duration(days: 30)),
-          firstDate: DateTime.now(),
+          firstDate: allowPast
+              ? DateTime.now().subtract(const Duration(days: 365))
+              : DateTime.now(),
           lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
           builder: (ctx, child) => Theme(
             data: ThemeData.dark().copyWith(
@@ -548,17 +637,14 @@ class _DatePicker extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.calendar_today,
-                size: 14, color: AppColors.textSecondary),
+            const Icon(Icons.calendar_today, size: 14, color: AppColors.textSecondary),
             const SizedBox(width: 8),
             Text(
               date != null
                   ? '${date!.month}/${date!.day}/${date!.year}'
-                  : 'Set due date',
+                  : 'Set date',
               style: TextStyle(
-                color: date != null
-                    ? AppColors.textPrimary
-                    : AppColors.textMuted,
+                color: date != null ? AppColors.textPrimary : AppColors.textMuted,
                 fontSize: 13,
               ),
             ),
@@ -584,11 +670,9 @@ class _ActionButtons extends StatelessWidget {
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: AppColors.textMuted),
               padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text('Discard',
-                style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text('Discard', style: TextStyle(color: AppColors.textSecondary)),
           ),
         ),
         const SizedBox(width: 12),
@@ -598,8 +682,7 @@ class _ActionButtons extends StatelessWidget {
             onPressed: onConfirm,
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             child: const Text('Save to Finance'),
           ),

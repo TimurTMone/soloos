@@ -5,6 +5,8 @@ import '../../data/repositories/local_finance_repository.dart';
 import '../../data/services/finance_ai_parser_service.dart';
 import '../../domain/models/debt_item.dart';
 import '../../domain/models/obligation_item.dart';
+import '../../domain/models/income_stream.dart';
+import '../../domain/models/expense.dart';
 import '../../domain/models/parsed_finance_input.dart';
 
 class FinanceViewModel extends ChangeNotifier {
@@ -21,8 +23,10 @@ class FinanceViewModel extends ChangeNotifier {
 
   List<DebtItem> _debts = [];
   List<ObligationItem> _obligations = [];
+  List<IncomeStream> _incomeStreams = [];
+  List<Expense> _expenses = [];
   bool _isParsingInput = false;
-  ParsedFinanceInput? _pendingInput; // waiting for user confirmation
+  ParsedFinanceInput? _pendingInput;
 
   // ── Getters ────────────────────────────────────────────────────────────────
 
@@ -49,6 +53,20 @@ class FinanceViewModel extends ChangeNotifier {
   List<ObligationItem> get obligationsDueThisWeek =>
       activeObligations.where((o) => o.isDueThisWeek).toList();
 
+  // ── Income & Expense Getters ────────────────────────────────────────────────
+
+  List<IncomeStream> get incomeStreams => List.unmodifiable(_incomeStreams);
+  List<IncomeStream> get activeIncomeStreams =>
+      _incomeStreams.where((i) => i.isActive).toList();
+  List<Expense> get expenses => List.unmodifiable(_expenses);
+
+  List<Expense> get thisMonthExpenses {
+    final now = DateTime.now();
+    return _expenses
+        .where((e) => e.date.month == now.month && e.date.year == now.year)
+        .toList();
+  }
+
   // ── Totals ─────────────────────────────────────────────────────────────────
 
   double get totalDebt =>
@@ -59,6 +77,15 @@ class FinanceViewModel extends ChangeNotifier {
 
   double get totalMonthlySubscriptions =>
       subscriptions.fold(0, (sum, o) => sum + o.monthlyCost);
+
+  double get totalMonthlyIncome =>
+      activeIncomeStreams.fold(0.0, (sum, i) => sum + i.monthlyIncome);
+
+  double get totalMonthlyExpenses =>
+      thisMonthExpenses.fold(0.0, (sum, e) => sum + e.amount);
+
+  double get monthlyCashFlow =>
+      totalMonthlyIncome - totalMonthlyObligations - totalMonthlyExpenses;
 
   /// Recommended next payment: highest priority active debt with due date
   DebtItem? get recommendedNextPayment {
@@ -92,6 +119,8 @@ class FinanceViewModel extends ChangeNotifier {
     await _repo.init();
     _debts = _repo.getDebts();
     _obligations = _repo.getObligations();
+    _incomeStreams = _repo.getIncomeStreams();
+    _expenses = _repo.getExpenses();
     notifyListeners();
   }
 
@@ -179,6 +208,57 @@ class FinanceViewModel extends ChangeNotifier {
   Future<void> deleteObligation(String id) async {
     await _repo.deleteObligation(id);
     _obligations = _repo.getObligations();
+    notifyListeners();
+  }
+
+  // ── Income Stream CRUD ──────────────────────────────────────────────────────
+
+  Future<void> addIncomeStream(IncomeStream income) async {
+    await _repo.saveIncomeStream(income);
+    _incomeStreams = _repo.getIncomeStreams();
+    notifyListeners();
+  }
+
+  Future<void> updateIncomeStream(IncomeStream income) async {
+    income.updatedAt = DateTime.now();
+    await _repo.updateIncomeStream(income);
+    _incomeStreams = _repo.getIncomeStreams();
+    notifyListeners();
+  }
+
+  Future<void> deleteIncomeStream(String id) async {
+    await _repo.deleteIncomeStream(id);
+    _incomeStreams = _repo.getIncomeStreams();
+    notifyListeners();
+  }
+
+  // ── Expense CRUD ────────────────────────────────────────────────────────────
+
+  Future<void> addExpense(Expense expense) async {
+    await _repo.saveExpense(expense);
+    _expenses = _repo.getExpenses();
+    notifyListeners();
+  }
+
+  Future<void> deleteExpense(String id) async {
+    await _repo.deleteExpense(id);
+    _expenses = _repo.getExpenses();
+    notifyListeners();
+  }
+
+  // ── Confirm Parsed Income / Expense ─────────────────────────────────────────
+
+  Future<void> confirmParsedIncome(IncomeStream income) async {
+    await _repo.saveIncomeStream(income);
+    _incomeStreams = _repo.getIncomeStreams();
+    _pendingInput = null;
+    notifyListeners();
+  }
+
+  Future<void> confirmParsedExpense(Expense expense) async {
+    await _repo.saveExpense(expense);
+    _expenses = _repo.getExpenses();
+    _pendingInput = null;
     notifyListeners();
   }
 }

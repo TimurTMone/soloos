@@ -1,8 +1,10 @@
 import 'debt_item.dart';
 import 'obligation_item.dart';
+import 'income_stream.dart';
+import 'expense.dart';
 
 /// Type of entity the AI parsed from natural language
-enum ParsedFinanceType { debt, obligation, transaction, unknown }
+enum ParsedFinanceType { debt, obligation, income, expense, unknown }
 
 /// A single field suggestion from the AI with a confidence level
 class ParsedField<T> {
@@ -122,36 +124,122 @@ class ParsedObligation {
       );
 }
 
+/// Parsed income stream from natural language
+class ParsedIncome {
+  final ParsedField<String> title;
+  final ParsedField<IncomeCategory> category;
+  final ParsedField<double> amount;
+  final ParsedField<String> currency;
+  final ParsedField<ObligationFrequency> frequency;
+  final String? notes;
+
+  const ParsedIncome({
+    required this.title,
+    required this.category,
+    required this.amount,
+    required this.currency,
+    required this.frequency,
+    this.notes,
+  });
+
+  List<String> get ambiguousFields {
+    final fields = <String>[];
+    if (title.needsConfirmation) fields.add('title');
+    if (category.needsConfirmation) fields.add('category');
+    if (amount.needsConfirmation) fields.add('amount');
+    if (frequency.needsConfirmation) fields.add('frequency');
+    return fields;
+  }
+
+  bool get hasAmbiguity => ambiguousFields.isNotEmpty;
+
+  IncomeStream toIncomeStream() => IncomeStream(
+        title: title.value,
+        category: category.value,
+        amount: amount.value,
+        currency: currency.value,
+        frequency: frequency.value,
+        notes: notes,
+      );
+}
+
+/// Parsed one-time expense from natural language
+class ParsedExpense {
+  final ParsedField<String> title;
+  final ParsedField<double> amount;
+  final ParsedField<String> currency;
+  final ParsedField<ExpenseCategory> category;
+  final ParsedField<DateTime> date;
+  final String? notes;
+
+  const ParsedExpense({
+    required this.title,
+    required this.amount,
+    required this.currency,
+    required this.category,
+    required this.date,
+    this.notes,
+  });
+
+  List<String> get ambiguousFields {
+    final fields = <String>[];
+    if (title.needsConfirmation) fields.add('title');
+    if (amount.needsConfirmation) fields.add('amount');
+    if (category.needsConfirmation) fields.add('category');
+    return fields;
+  }
+
+  bool get hasAmbiguity => ambiguousFields.isNotEmpty;
+
+  Expense toExpense() => Expense(
+        title: title.value,
+        amount: amount.value,
+        currency: currency.value,
+        category: category.value,
+        date: date.value,
+        notes: notes,
+      );
+}
+
 /// Container for the full AI parse result
 class ParsedFinanceInput {
   final ParsedFinanceType type;
   final ParsedDebt? debt;
   final ParsedObligation? obligation;
+  final ParsedIncome? income;
+  final ParsedExpense? expense;
   final String rawInput;
-  final String? clarificationMessage; // shown to user when hasAmbiguity
+  final String? clarificationMessage;
   final double overallConfidence;
 
   const ParsedFinanceInput({
     required this.type,
     this.debt,
     this.obligation,
+    this.income,
+    this.expense,
     required this.rawInput,
     this.clarificationMessage,
     required this.overallConfidence,
   });
 
   bool get hasAmbiguity =>
-      (debt?.hasAmbiguity ?? false) || (obligation?.hasAmbiguity ?? false);
+      (debt?.hasAmbiguity ?? false) ||
+      (obligation?.hasAmbiguity ?? false) ||
+      (income?.hasAmbiguity ?? false) ||
+      (expense?.hasAmbiguity ?? false);
 
   bool get isDebt => type == ParsedFinanceType.debt && debt != null;
   bool get isObligation =>
       type == ParsedFinanceType.obligation && obligation != null;
+  bool get isIncome => type == ParsedFinanceType.income && income != null;
+  bool get isExpense => type == ParsedFinanceType.expense && expense != null;
 
   static ParsedFinanceInput unknown(String raw) => ParsedFinanceInput(
         type: ParsedFinanceType.unknown,
         rawInput: raw,
         overallConfidence: 0.0,
         clarificationMessage:
-            'Could not understand the input. Try: "I owe \$500 to John" or "I pay \$50/month for Spotify"',
+            'Could not understand. Try: "I earn \$3000/month freelancing" or "Spent \$12 on lunch"',
       );
 }
