@@ -1,5 +1,5 @@
 {
-  "buildCommand": "echo \"SUPABASE_URL=$SUPABASE_URL\" > .env && echo \"SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY\" >> .env && curl -s https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.32.1-stable.tar.xz | tar xJ -C /tmp && export PATH=\"/tmp/flutter/bin:$PATH\" && flutter --version && flutter pub get && flutter build web --release",
+  "buildCommand": "touch .env && curl -s https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.32.1-stable.tar.xz | tar xJ -C /tmp && export PATH=\"/tmp/flutter/bin:$PATH\" && flutter --version && flutter pub get && flutter build web --release",
   "outputDirectory": "build/web",
   "framework": null,
   "functions": {

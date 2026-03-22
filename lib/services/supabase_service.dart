@@ -3,11 +3,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// Thin wrapper around Supabase client.
 /// All modules access Supabase through this single service.
 class SupabaseService {
+  static bool _initialized = false;
+  static void markInitialized() => _initialized = true;
+
   static SupabaseClient get client => Supabase.instance.client;
 
-  static String? get userId => client.auth.currentUser?.id;
+  static String? get userId =>
+      _initialized ? client.auth.currentUser?.id : null;
 
-  static bool get isAuthenticated => client.auth.currentUser != null;
+  static bool get isAuthenticated =>
+      _initialized && client.auth.currentUser != null;
 
   static Stream<AuthState> get authStateChanges => client.auth.onAuthStateChange;
 

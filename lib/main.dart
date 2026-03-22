@@ -8,6 +8,7 @@ import 'theme/app_theme.dart';
 import 'services/storage_service.dart';
 import 'services/locale_service.dart';
 import 'services/google_calendar_service.dart';
+import 'services/supabase_service.dart';
 import 'features/auth/presentation/screens/auth_screen.dart';
 import 'features/ideas/presentation/viewmodels/ideas_view_model.dart';
 import 'features/dashboard/presentation/viewmodels/dashboard_view_model.dart';
@@ -29,16 +30,22 @@ void main() async {
     statusBarIconBrightness: Brightness.light,
   ));
 
-  // Load env
-  await dotenv.load(fileName: '.env');
+  // Load env (may not exist in production web builds)
+  bool supabaseReady = false;
+  try {
+    await dotenv.load(fileName: '.env');
+    final url = dotenv.env['SUPABASE_URL'] ?? '';
+    final key = dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+    if (url.isNotEmpty && key.isNotEmpty && url.startsWith('https://')) {
+      await Supabase.initialize(url: url, anonKey: key);
+      SupabaseService.markInitialized();
+      supabaseReady = true;
+    }
+  } catch (_) {
+    // No env or invalid credentials — run in local-only mode
+  }
 
-  // Init Supabase
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
-  );
-
-  // Keep local storage for now (gradual migration)
+  // Local storage always available
   final storage = StorageService();
   await storage.init();
 
@@ -60,14 +67,22 @@ void main() async {
         ChangeNotifierProvider(create: (_) => StandupViewModel()),
         ChangeNotifierProvider(create: (_) => ContactsViewModel()),
       ],
-      child: SoloOSApp(isOnboarded: storage.onboardingDone),
+      child: SoloOSApp(
+        isOnboarded: storage.onboardingDone,
+        supabaseReady: supabaseReady,
+      ),
     ),
   );
 }
 
 class SoloOSApp extends StatelessWidget {
   final bool isOnboarded;
-  const SoloOSApp({super.key, required this.isOnboarded});
+  final bool supabaseReady;
+  const SoloOSApp({
+    super.key,
+    required this.isOnboarded,
+    required this.supabaseReady,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -88,7 +103,11 @@ class SoloOSApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: const _AuthGate(),
+      home: supabaseReady
+          ? const _AuthGate()
+          : isOnboarded
+              ? const DashboardScreen()
+              : const OnboardingScreen(),
     );
   }
 }
