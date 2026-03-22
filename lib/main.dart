@@ -9,6 +9,7 @@ import 'services/storage_service.dart';
 import 'services/locale_service.dart';
 import 'services/google_calendar_service.dart';
 import 'services/supabase_service.dart';
+import 'services/demo_data_seeder.dart';
 import 'features/auth/presentation/screens/auth_screen.dart';
 import 'features/ideas/presentation/viewmodels/ideas_view_model.dart';
 import 'features/dashboard/presentation/viewmodels/dashboard_view_model.dart';
@@ -48,6 +49,9 @@ void main() async {
   // Local storage always available
   final storage = StorageService();
   await storage.init();
+
+  // Seed demo data on first launch (no-op if data exists)
+  await DemoDataSeeder.seedIfEmpty(storage);
 
   final localeService = LocaleService();
   await localeService.init();
