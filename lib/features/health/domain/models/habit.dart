@@ -59,4 +59,21 @@ class Habit {
             .toList(),
         color: Color(j['color'] ?? 0xFF10B981),
       );
+
+  factory Habit.fromRow(Map<String, dynamic> r, {List<DateTime>? completedDates}) => Habit(
+        id: r['id'],
+        name: r['name'],
+        emoji: r['emoji'] ?? '✅',
+        frequency: r['frequency'] ?? 'daily',
+        completedDates: completedDates ?? [],
+        color: Color(r['color'] ?? 0xFF10B981),
+      );
+
+  Map<String, dynamic> toRow() => {
+        'id': id,
+        'name': name,
+        'emoji': emoji,
+        'frequency': frequency,
+        'color': color.toARGB32(),
+      };
 }

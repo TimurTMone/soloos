@@ -138,6 +138,7 @@ class _IdeasScreenState extends State<IdeasScreen>
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'ideas_fab',
         onPressed: () => _showAddDialog(context, vm),
         backgroundColor: AppColors.ideasColor,
         child: const Icon(Icons.lightbulb_outline_rounded),

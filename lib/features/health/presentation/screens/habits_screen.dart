@@ -167,6 +167,7 @@ class HabitsScreen extends StatelessWidget {
               ],
             ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'habits_fab',
         onPressed: () => _showAddDialog(context, vm),
         backgroundColor: AppColors.healthColor,
         child: const Icon(Icons.add),

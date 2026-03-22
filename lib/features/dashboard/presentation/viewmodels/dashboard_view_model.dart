@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
-import '../../../../models/app_models.dart';
 import '../../../../services/storage_service.dart';
 import '../../../../services/claude_service.dart';
 import '../../../../core/utils/stats_calculator.dart';

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'theme/app_theme.dart';
 import 'services/storage_service.dart';
 import 'services/locale_service.dart';
 import 'services/google_calendar_service.dart';
+import 'features/auth/presentation/screens/auth_screen.dart';
 import 'features/ideas/presentation/viewmodels/ideas_view_model.dart';
 import 'features/dashboard/presentation/viewmodels/dashboard_view_model.dart';
 import 'features/finance/presentation/viewmodels/finance_view_model.dart';
@@ -26,6 +29,16 @@ void main() async {
     statusBarIconBrightness: Brightness.light,
   ));
 
+  // Load env
+  await dotenv.load(fileName: '.env');
+
+  // Init Supabase
+  await Supabase.initialize(
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+  );
+
+  // Keep local storage for now (gradual migration)
   final storage = StorageService();
   await storage.init();
 
@@ -75,7 +88,68 @@ class SoloOSApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: isOnboarded ? const DashboardScreen() : const OnboardingScreen(),
+      home: const _AuthGate(),
+    );
+  }
+}
+
+/// Listens to Supabase auth state and routes accordingly.
+class _AuthGate extends StatefulWidget {
+  const _AuthGate();
+
+  @override
+  State<_AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<_AuthGate> {
+  bool _didReload = false;
+  bool _skipAuth = false;
+
+  void _reloadAllViewModels(BuildContext context) {
+    if (_didReload) return;
+    _didReload = true;
+    context.read<IdeasViewModel>().reload();
+    context.read<HabitsViewModel>().reload();
+    context.read<ProjectsViewModel>().reload();
+    context.read<StandupViewModel>().reload();
+    context.read<ContactsViewModel>().reload();
+    context.read<FinanceViewModel>().reload();
+    context.read<FamilyViewModel>().reload();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Demo mode — skip auth, use local storage only
+    if (_skipAuth) {
+      final storage = StorageService();
+      return storage.onboardingDone
+          ? const DashboardScreen()
+          : const OnboardingScreen();
+    }
+
+    return StreamBuilder<AuthState>(
+      stream: Supabase.instance.client.auth.onAuthStateChange,
+      builder: (context, snapshot) {
+        final session = Supabase.instance.client.auth.currentSession;
+
+        if (session != null) {
+          // Reload ViewModels once after login so they fetch from Supabase
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _reloadAllViewModels(context);
+          });
+
+          final storage = StorageService();
+          return storage.onboardingDone
+              ? const DashboardScreen()
+              : const OnboardingScreen();
+        }
+
+        // Reset reload flag on logout
+        _didReload = false;
+        return AuthScreen(
+          onSkip: () => setState(() => _skipAuth = true),
+        );
+      },
     );
   }
 }

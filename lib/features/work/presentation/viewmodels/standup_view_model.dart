@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../../domain/models/standup_log.dart';
 import '../../../../services/storage_service.dart';
+import '../../../../services/supabase_service.dart';
 import '../../../../services/claude_service.dart';
 import '../../../gamification/data/services/gamification_event_bus.dart';
 import '../../../gamification/domain/models/gamification_event.dart';
@@ -26,10 +27,28 @@ class StandupViewModel extends ChangeNotifier {
   bool get loading => _loading;
   String? get aiResponse => _aiResponse;
 
-  void _loadLogs() {
-    _logs = _storage.getStandupLogs();
+  bool get _useDb => SupabaseService.isAuthenticated;
+
+  Future<void> _loadLogs() async {
+    _loading = true;
+    notifyListeners();
+
+    try {
+      if (_useDb) {
+        final rows = await SupabaseService.getAll('standup_logs', orderBy: 'created_at');
+        _logs = rows.map((r) => StandupLog.fromRow(r)).toList();
+      } else {
+        _logs = _storage.getStandupLogs();
+      }
+    } catch (_) {
+      _logs = _storage.getStandupLogs();
+    }
+
+    _loading = false;
     notifyListeners();
   }
+
+  void reload() => _loadLogs();
 
   Future<void> submit({
     required String wins,
@@ -54,13 +73,19 @@ class StandupViewModel extends ChangeNotifier {
       aiResponse: aiResp,
     );
 
+    if (_useDb) {
+      final row = log.toRow();
+      row['user_id'] = SupabaseService.userId;
+      await SupabaseService.client.from('standup_logs').insert(row);
+    }
+
     final logs = _storage.getStandupLogs()..insert(0, log);
     await _storage.saveStandupLogs(logs);
     GamificationEventBus.emit(GamificationEventType.standupCompleted);
 
     _loading = false;
     _aiResponse = aiResp;
-    _loadLogs();
+    await _loadLogs();
   }
 
   void clearResponse() {

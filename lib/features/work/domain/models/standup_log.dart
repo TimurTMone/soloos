@@ -32,4 +32,22 @@ class StandupLog {
         priorities: j['priorities'] ?? '',
         aiResponse: j['aiResponse'] ?? '',
       );
+
+  factory StandupLog.fromRow(Map<String, dynamic> r) => StandupLog(
+        id: r['id'],
+        date: DateTime.tryParse(r['created_at'] ?? '') ?? DateTime.now(),
+        wins: r['wins'] ?? '',
+        challenges: r['challenges'] ?? '',
+        priorities: r['priorities'] ?? '',
+        aiResponse: r['ai_response'] ?? '',
+      );
+
+  Map<String, dynamic> toRow() => {
+        'id': id,
+        'wins': wins,
+        'challenges': challenges,
+        'priorities': priorities,
+        'ai_response': aiResponse,
+        'created_at': date.toIso8601String(),
+      };
 }

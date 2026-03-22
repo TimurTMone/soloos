@@ -8,6 +8,7 @@ import '../../domain/models/family_person.dart';
 import '../../domain/models/family_reminder.dart';
 import '../../domain/models/family_suggestion.dart';
 import '../../domain/models/relationship_note.dart';
+import '../../../../services/supabase_service.dart';
 
 class FamilyViewModel extends ChangeNotifier {
   FamilyViewModel({FamilyRepositoryImpl? repo})
@@ -16,8 +17,10 @@ class FamilyViewModel extends ChangeNotifier {
   }
 
   final FamilyRepositoryImpl _repo;
-  late final FamilyReminderService _reminderService;
+  FamilyReminderService? _reminderService;
   final _suggestionService = FamilyAiSuggestionService();
+
+  bool get _useDb => SupabaseService.isAuthenticated;
 
   List<FamilyPerson> _people = [];
   List<FamilyReminder> _reminders = [];
@@ -39,20 +42,20 @@ class FamilyViewModel extends ChangeNotifier {
         ..sort((a, b) => a.daysUntilBirthday!.compareTo(b.daysUntilBirthday!));
 
   List<FamilyReminder> get upcomingReminders =>
-      _reminderService.getUpcomingReminders();
+      _reminderService?.getUpcomingReminders() ?? [];
 
   List<FamilyReminder> get overdueReminders =>
-      _reminderService.getOverdueReminders();
+      _reminderService?.getOverdueReminders() ?? [];
 
   List<FamilyReminder> get dueTodayReminders =>
-      _reminderService.getDueTodayReminders();
+      _reminderService?.getDueTodayReminders() ?? [];
 
   List<FamilySuggestion> get suggestions =>
       _suggestions.where((s) => s.isActive).toList();
 
   int get totalPeople => _people.length;
   int get overdueContactCount => overdueContacts.length;
-  int get dueTodayCount => _reminderService.getDueTodayCount();
+  int get dueTodayCount => _reminderService?.getDueTodayCount() ?? 0;
 
   // ── Init ───────────────────────────────────────────────────────────────────
 
@@ -60,14 +63,30 @@ class FamilyViewModel extends ChangeNotifier {
     await _repo.init();
     _reminderService = FamilyReminderService(_repo);
     await _refresh();
-    await _reminderService.generateBirthdayRemindersIfNeeded(_people);
-    _reminders = _repo.getAllReminders();
+    await _reminderService!.generateBirthdayRemindersIfNeeded(_people);
+    _reminders = _useDb
+        ? await _loadRemindersFromDb()
+        : _repo.getAllReminders();
     notifyListeners();
   }
 
+  void reload() => _init();
+
   Future<void> _refresh() async {
-    _people = _repo.getAllPeople();
-    _reminders = _repo.getAllReminders();
+    try {
+      if (_useDb) {
+        final rows = await SupabaseService.getAll('family_people', orderBy: 'created_at');
+        _people = rows.map((r) => FamilyPerson.fromRow(r)).where((p) => p.isActive).toList();
+        _reminders = await _loadRemindersFromDb();
+      } else {
+        _people = _repo.getAllPeople();
+        _reminders = _repo.getAllReminders();
+      }
+    } catch (_) {
+      _people = _repo.getAllPeople();
+      _reminders = _repo.getAllReminders();
+    }
+    await _loadNotesForPeople();
     _suggestions = _suggestionService.generateDailySuggestions(
       people: _people,
       reminders: _reminders,
@@ -75,30 +94,59 @@ class FamilyViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<List<FamilyReminder>> _loadRemindersFromDb() async {
+    final rows = await SupabaseService.getAll('family_reminders', orderBy: 'due_at', ascending: true);
+    return rows.map((r) => FamilyReminder.fromRow(r)).toList();
+  }
+
   // ── People ─────────────────────────────────────────────────────────────────
 
   Future<void> addPerson(FamilyPerson person) async {
+    if (_useDb) {
+      final row = person.toRow();
+      row['user_id'] = SupabaseService.userId;
+      await SupabaseService.client.from('family_people').insert(row);
+    }
     await _repo.savePerson(person);
     await _refresh();
   }
 
   Future<void> updatePerson(FamilyPerson person) async {
     person.updatedAt = DateTime.now();
+    if (_useDb) {
+      await SupabaseService.update('family_people', person.id, {
+        'full_name': person.fullName,
+        'notes_summary': person.notesSummary,
+        'last_contact_at': person.lastContactAt?.toIso8601String(),
+        'priority_level': person.priorityLevel.name,
+        'is_active': person.isActive,
+      });
+    }
     await _repo.updatePerson(person);
     await _refresh();
   }
 
   Future<void> deletePerson(String id) async {
+    if (_useDb) {
+      await SupabaseService.update('family_people', id, {'is_active': false});
+    }
     await _repo.deletePerson(id);
     await _refresh();
   }
 
   /// One-tap "contacted today" action
   Future<void> markContactedToday(String personId) async {
-    final person = _repo.getPersonById(personId);
+    final person = _useDb
+        ? _people.where((p) => p.id == personId).firstOrNull
+        : _repo.getPersonById(personId);
     if (person == null) return;
     person.lastContactAt = DateTime.now();
     person.updatedAt = DateTime.now();
+    if (_useDb) {
+      await SupabaseService.update('family_people', personId, {
+        'last_contact_at': person.lastContactAt!.toIso8601String(),
+      });
+    }
     await _repo.updatePerson(person);
     GamificationEventBus.emit(GamificationEventType.contactedPerson,
         description: person.displayName);
@@ -108,34 +156,74 @@ class FamilyViewModel extends ChangeNotifier {
   // ── Reminders ──────────────────────────────────────────────────────────────
 
   Future<void> addReminder(FamilyReminder reminder) async {
+    if (_useDb) {
+      final row = reminder.toRow();
+      row['user_id'] = SupabaseService.userId;
+      await SupabaseService.client.from('family_reminders').insert(row);
+    }
     await _repo.saveReminder(reminder);
     await _refresh();
   }
 
   Future<void> completeReminder(String reminderId) async {
-    await _reminderService.completeReminder(reminderId);
+    if (_useDb) {
+      await SupabaseService.update('family_reminders', reminderId, {
+        'is_completed': true,
+        'completed_at': DateTime.now().toIso8601String(),
+      });
+    }
+    await _reminderService?.completeReminder(reminderId);
     GamificationEventBus.emit(GamificationEventType.reminderCompleted);
     await _refresh();
   }
 
   Future<void> deleteReminder(String id) async {
+    if (_useDb) {
+      await SupabaseService.delete('family_reminders', id);
+    }
     await _repo.deleteReminder(id);
     await _refresh();
   }
 
   // ── Notes ──────────────────────────────────────────────────────────────────
 
+  Map<String, List<RelationshipNote>> _notesCache = {};
+
   List<RelationshipNote> getNotesForPerson(String personId) =>
-      _repo.getNotesForPerson(personId);
+      _notesCache[personId] ?? _repo.getNotesForPerson(personId);
+
+  Future<void> _loadNotesForPeople() async {
+    if (!_useDb) return;
+    try {
+      final rows = await SupabaseService.getAll('relationship_notes', orderBy: 'created_at');
+      _notesCache = {};
+      for (final r in rows) {
+        final note = RelationshipNote.fromRow(r);
+        _notesCache.putIfAbsent(note.personId, () => []).add(note);
+      }
+    } catch (_) {}
+  }
 
   Future<void> addNote(RelationshipNote note) async {
+    if (_useDb) {
+      final row = note.toRow();
+      row['user_id'] = SupabaseService.userId;
+      await SupabaseService.client.from('relationship_notes').insert(row);
+    }
     await _repo.saveNote(note);
+    _notesCache.putIfAbsent(note.personId, () => []).add(note);
     GamificationEventBus.emit(GamificationEventType.noteAdded);
     notifyListeners();
   }
 
   Future<void> deleteNote(String id) async {
+    if (_useDb) {
+      await SupabaseService.delete('relationship_notes', id);
+    }
     await _repo.deleteNote(id);
+    for (final list in _notesCache.values) {
+      list.removeWhere((n) => n.id == id);
+    }
     notifyListeners();
   }
 

@@ -8,6 +8,7 @@ import '../../domain/models/obligation_item.dart';
 import '../../domain/models/income_stream.dart';
 import '../../domain/models/expense.dart';
 import '../../domain/models/parsed_finance_input.dart';
+import '../../../../services/supabase_service.dart';
 
 class FinanceViewModel extends ChangeNotifier {
   FinanceViewModel({
@@ -20,6 +21,7 @@ class FinanceViewModel extends ChangeNotifier {
 
   final LocalFinanceRepository _repo;
   final FinanceAiParserService _parser;
+  bool get _useDb => SupabaseService.isAuthenticated;
 
   List<DebtItem> _debts = [];
   List<ObligationItem> _obligations = [];
@@ -131,12 +133,33 @@ class FinanceViewModel extends ChangeNotifier {
 
   Future<void> _init() async {
     await _repo.init();
+    try {
+      if (_useDb) {
+        final debtRows = await SupabaseService.getAll('debts', orderBy: 'created_at');
+        final obligationRows = await SupabaseService.getAll('obligations', orderBy: 'created_at');
+        final incomeRows = await SupabaseService.getAll('income_streams', orderBy: 'created_at');
+        final expenseRows = await SupabaseService.getAll('expenses', orderBy: 'date');
+        _debts = debtRows.map((r) => DebtItem.fromRow(r)).toList();
+        _obligations = obligationRows.map((r) => ObligationItem.fromRow(r)).toList();
+        _incomeStreams = incomeRows.map((r) => IncomeStream.fromRow(r)).toList();
+        _expenses = expenseRows.map((r) => Expense.fromRow(r)).toList();
+      } else {
+        _loadLocal();
+      }
+    } catch (_) {
+      _loadLocal();
+    }
+    notifyListeners();
+  }
+
+  void _loadLocal() {
     _debts = _repo.getDebts();
     _obligations = _repo.getObligations();
     _incomeStreams = _repo.getIncomeStreams();
     _expenses = _repo.getExpenses();
-    notifyListeners();
   }
+
+  void reload() => _init();
 
   // ── AI Input Parsing ───────────────────────────────────────────────────────
 
@@ -175,6 +198,11 @@ class FinanceViewModel extends ChangeNotifier {
   // ── Debt CRUD ──────────────────────────────────────────────────────────────
 
   Future<void> addDebt(DebtItem debt) async {
+    if (_useDb) {
+      final row = debt.toRow();
+      row['user_id'] = SupabaseService.userId;
+      await SupabaseService.client.from('debts').insert(row);
+    }
     await _repo.saveDebt(debt);
     _debts = _repo.getDebts();
     notifyListeners();
@@ -182,12 +210,24 @@ class FinanceViewModel extends ChangeNotifier {
 
   Future<void> updateDebt(DebtItem debt) async {
     debt.updatedAt = DateTime.now();
+    if (_useDb) {
+      await SupabaseService.update('debts', debt.id, {
+        'remaining_amount': debt.remainingAmount,
+        'status': debt.status.name,
+        'priority': debt.priority.name,
+        'notes': debt.notes,
+        'updated_at': debt.updatedAt.toIso8601String(),
+      });
+    }
     await _repo.updateDebt(debt);
     _debts = _repo.getDebts();
     notifyListeners();
   }
 
   Future<void> deleteDebt(String id) async {
+    if (_useDb) {
+      await SupabaseService.delete('debts', id);
+    }
     await _repo.deleteDebt(id);
     _debts = _repo.getDebts();
     notifyListeners();
@@ -212,6 +252,11 @@ class FinanceViewModel extends ChangeNotifier {
   // ── Obligation CRUD ────────────────────────────────────────────────────────
 
   Future<void> addObligation(ObligationItem obligation) async {
+    if (_useDb) {
+      final row = obligation.toRow();
+      row['user_id'] = SupabaseService.userId;
+      await SupabaseService.client.from('obligations').insert(row);
+    }
     await _repo.saveObligation(obligation);
     _obligations = _repo.getObligations();
     GamificationEventBus.emit(GamificationEventType.obligationTracked,
@@ -220,6 +265,9 @@ class FinanceViewModel extends ChangeNotifier {
   }
 
   Future<void> deleteObligation(String id) async {
+    if (_useDb) {
+      await SupabaseService.delete('obligations', id);
+    }
     await _repo.deleteObligation(id);
     _obligations = _repo.getObligations();
     notifyListeners();
@@ -228,6 +276,11 @@ class FinanceViewModel extends ChangeNotifier {
   // ── Income Stream CRUD ──────────────────────────────────────────────────────
 
   Future<void> addIncomeStream(IncomeStream income) async {
+    if (_useDb) {
+      final row = income.toRow();
+      row['user_id'] = SupabaseService.userId;
+      await SupabaseService.client.from('income_streams').insert(row);
+    }
     await _repo.saveIncomeStream(income);
     _incomeStreams = _repo.getIncomeStreams();
     notifyListeners();
@@ -235,12 +288,23 @@ class FinanceViewModel extends ChangeNotifier {
 
   Future<void> updateIncomeStream(IncomeStream income) async {
     income.updatedAt = DateTime.now();
+    if (_useDb) {
+      await SupabaseService.update('income_streams', income.id, {
+        'title': income.title,
+        'amount': income.amount,
+        'is_active': income.isActive,
+        'updated_at': income.updatedAt.toIso8601String(),
+      });
+    }
     await _repo.updateIncomeStream(income);
     _incomeStreams = _repo.getIncomeStreams();
     notifyListeners();
   }
 
   Future<void> deleteIncomeStream(String id) async {
+    if (_useDb) {
+      await SupabaseService.delete('income_streams', id);
+    }
     await _repo.deleteIncomeStream(id);
     _incomeStreams = _repo.getIncomeStreams();
     notifyListeners();
@@ -249,12 +313,20 @@ class FinanceViewModel extends ChangeNotifier {
   // ── Expense CRUD ────────────────────────────────────────────────────────────
 
   Future<void> addExpense(Expense expense) async {
+    if (_useDb) {
+      final row = expense.toRow();
+      row['user_id'] = SupabaseService.userId;
+      await SupabaseService.client.from('expenses').insert(row);
+    }
     await _repo.saveExpense(expense);
     _expenses = _repo.getExpenses();
     notifyListeners();
   }
 
   Future<void> deleteExpense(String id) async {
+    if (_useDb) {
+      await SupabaseService.delete('expenses', id);
+    }
     await _repo.deleteExpense(id);
     _expenses = _repo.getExpenses();
     notifyListeners();

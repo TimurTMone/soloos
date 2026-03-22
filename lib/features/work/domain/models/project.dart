@@ -39,4 +39,21 @@ class Project {
         color: Color(j['color'] ?? 0xFF3B82F6),
         createdAt: DateTime.tryParse(j['createdAt'] ?? '') ?? DateTime.now(),
       );
+
+  factory Project.fromRow(Map<String, dynamic> r, {List<Task>? tasks}) => Project(
+        id: r['id'],
+        name: r['name'],
+        description: r['description'] ?? '',
+        tasks: tasks ?? [],
+        color: Color(r['color'] ?? 0xFF3B82F6),
+        createdAt: DateTime.tryParse(r['created_at'] ?? '') ?? DateTime.now(),
+      );
+
+  Map<String, dynamic> toRow() => {
+        'id': id,
+        'name': name,
+        'description': description,
+        'color': color.toARGB32(),
+        'created_at': createdAt.toIso8601String(),
+      };
 }

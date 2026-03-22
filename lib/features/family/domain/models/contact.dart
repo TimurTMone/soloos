@@ -39,4 +39,22 @@ class Contact {
         relationship: j['relationship'] ?? 'friend',
         notes: j['notes'] ?? '',
       );
+
+  factory Contact.fromRow(Map<String, dynamic> r) => Contact(
+        id: r['id'],
+        name: r['name'],
+        emoji: r['emoji'] ?? '👤',
+        birthday: DateTime.parse(r['birthday']),
+        relationship: r['relationship'] ?? 'friend',
+        notes: r['notes'] ?? '',
+      );
+
+  Map<String, dynamic> toRow() => {
+        'id': id,
+        'name': name,
+        'emoji': emoji,
+        'birthday': birthday.toIso8601String(),
+        'relationship': relationship,
+        'notes': notes,
+      };
 }

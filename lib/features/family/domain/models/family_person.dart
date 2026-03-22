@@ -160,4 +160,50 @@ class FamilyPerson {
         createdAt: DateTime.parse(j['createdAt']),
         updatedAt: DateTime.parse(j['updatedAt']),
       );
+
+  factory FamilyPerson.fromRow(Map<String, dynamic> r) => FamilyPerson(
+        id: r['id'],
+        fullName: r['full_name'] ?? '',
+        relationshipType: RelationshipType.values.firstWhere(
+          (e) => e.name == r['relationship_type'],
+          orElse: () => RelationshipType.other,
+        ),
+        nickname: r['nickname'],
+        birthday: r['birthday'] != null ? DateTime.tryParse(r['birthday']) : null,
+        phone: r['phone'],
+        email: r['email'],
+        notesSummary: r['notes_summary'] ?? '',
+        lastContactAt: r['last_contact_at'] != null
+            ? DateTime.tryParse(r['last_contact_at'])
+            : null,
+        contactFrequencyGoalDays: r['contact_frequency_goal_days'],
+        priorityLevel: PriorityLevel.values.firstWhere(
+          (e) => e.name == r['priority_level'],
+          orElse: () => PriorityLevel.medium,
+        ),
+        tags: (r['tags'] as List?)?.cast<String>() ?? [],
+        favoritethings: (r['favorite_things'] as List?)?.cast<String>() ?? [],
+        isActive: r['is_active'] ?? true,
+        createdAt: DateTime.tryParse(r['created_at'] ?? '') ?? DateTime.now(),
+        updatedAt: DateTime.tryParse(r['updated_at'] ?? '') ?? DateTime.now(),
+      );
+
+  Map<String, dynamic> toRow() => {
+        'id': id,
+        'full_name': fullName,
+        'relationship_type': relationshipType.name,
+        'nickname': nickname,
+        'birthday': birthday?.toIso8601String(),
+        'phone': phone,
+        'email': email,
+        'notes_summary': notesSummary,
+        'last_contact_at': lastContactAt?.toIso8601String(),
+        'contact_frequency_goal_days': contactFrequencyGoalDays,
+        'priority_level': priorityLevel.name,
+        'tags': tags,
+        'favorite_things': favoritethings,
+        'is_active': isActive,
+        'created_at': createdAt.toIso8601String(),
+        'updated_at': updatedAt.toIso8601String(),
+      };
 }

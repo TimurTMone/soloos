@@ -128,4 +128,40 @@ class FamilyReminder {
             ? DateTime.tryParse(j['completedAt'])
             : null,
       );
+
+  factory FamilyReminder.fromRow(Map<String, dynamic> r) => FamilyReminder(
+        id: r['id'],
+        personId: r['person_id'] ?? '',
+        title: r['title'] ?? '',
+        description: r['description'],
+        reminderType: ReminderType.values.firstWhere(
+          (e) => e.name == r['reminder_type'],
+          orElse: () => ReminderType.custom,
+        ),
+        dueAt: DateTime.parse(r['due_at']),
+        isCompleted: r['is_completed'] ?? false,
+        recurrenceType: RecurrenceType.values.firstWhere(
+          (e) => e.name == r['recurrence_type'],
+          orElse: () => RecurrenceType.none,
+        ),
+        createdAt: DateTime.tryParse(r['created_at'] ?? '') ?? DateTime.now(),
+        updatedAt: DateTime.tryParse(r['updated_at'] ?? '') ?? DateTime.now(),
+        completedAt: r['completed_at'] != null
+            ? DateTime.tryParse(r['completed_at'])
+            : null,
+      );
+
+  Map<String, dynamic> toRow() => {
+        'id': id,
+        'person_id': personId,
+        'title': title,
+        'description': description,
+        'reminder_type': reminderType.name,
+        'due_at': dueAt.toIso8601String(),
+        'is_completed': isCompleted,
+        'recurrence_type': recurrenceType.name,
+        'created_at': createdAt.toIso8601String(),
+        'updated_at': updatedAt.toIso8601String(),
+        'completed_at': completedAt?.toIso8601String(),
+      };
 }

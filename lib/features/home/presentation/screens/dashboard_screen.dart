@@ -7,15 +7,14 @@ import '../../../../services/locale_service.dart';
 import '../../../../widgets/common_widgets.dart';
 import '../../../../core/utils/stats_calculator.dart';
 import '../../../dashboard/presentation/viewmodels/dashboard_view_model.dart';
-import '../../../work/presentation/screens/projects_screen.dart';
-import '../../../health/presentation/screens/habits_screen.dart';
 import '../../../finance/presentation/screens/finance_dashboard_screen.dart';
-import '../../../family/presentation/screens/family_dashboard_screen.dart';
+import '../../../gamification/presentation/viewmodels/gamification_viewmodel.dart';
 import '../../../gamification/presentation/screens/gamification_dashboard_screen.dart';
-import '../../../ideas/presentation/screens/ideas_screen.dart';
+import '../../../gamification/domain/models/user_progress.dart';
 import '../../../work/presentation/screens/standup_screen.dart';
 import '../../../family/presentation/screens/contacts_screen.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
+import 'work_hub_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -29,12 +28,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
 
   static const List<Widget> _staticScreens = [
-    ProjectsScreen(),
-    HabitsScreen(),
-    FinanceDashboardScreen(),
-    IdeasScreen(),
-    FamilyDashboardScreen(),
-    GamificationDashboardScreen(),
+    WorkHubScreen(),     // index 1: Projects + Ideas
+    LifeHubScreen(),     // index 2: Habits + Family
+    FinanceDashboardScreen(), // index 3: Finance
   ];
 
   void _navigate(int index) => setState(() => _currentIndex = index);
@@ -64,7 +60,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-class _HomeTab extends StatelessWidget {
+class _HomeTab extends StatefulWidget {
   final StorageService storage;
   final String digest;
   final bool digestLoading;
@@ -80,6 +76,19 @@ class _HomeTab extends StatelessWidget {
   });
 
   @override
+  State<_HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<_HomeTab> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<GamificationViewModel>().init();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final hour = now.hour;
@@ -92,6 +101,8 @@ class _HomeTab extends StatelessWidget {
       greeting = ls.t('good_evening');
     }
 
+    final gamVm = context.watch<GamificationViewModel>();
+    final storage = widget.storage;
     final stats = StatsCalculator.calculate(
       projects: storage.getProjects(),
       habits: storage.getHabits(),
@@ -152,9 +163,9 @@ class _HomeTab extends StatelessWidget {
 
               // ── AI Daily Digest ──────────────────────────────────
               _DigestCard(
-                digest: digest,
-                loading: digestLoading,
-                onRefresh: onRefreshDigest,
+                digest: widget.digest,
+                loading: widget.digestLoading,
+                onRefresh: widget.onRefreshDigest,
                 hasApiKey: storage.apiKey.isNotEmpty,
               ),
               const SizedBox(height: 16),
@@ -168,7 +179,7 @@ class _HomeTab extends StatelessWidget {
                       value: openTasks.toString(),
                       icon: Icons.check_box_outlined,
                       color: AppColors.workColor,
-                      onTap: () => onNavigate(1),
+                      onTap: () => widget.onNavigate(1),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -178,7 +189,7 @@ class _HomeTab extends StatelessWidget {
                       value: '${habitStreak}d',
                       icon: Icons.local_fire_department_rounded,
                       color: AppColors.healthColor,
-                      onTap: () => onNavigate(2),
+                      onTap: () => widget.onNavigate(2),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -188,11 +199,15 @@ class _HomeTab extends StatelessWidget {
                       value: '\$${balance.toStringAsFixed(0)}',
                       icon: Icons.account_balance_wallet_outlined,
                       color: AppColors.financeColor,
-                      onTap: () => onNavigate(3),
+                      onTap: () => widget.onNavigate(3),
                     ),
                   ),
                 ],
               ),
+              const SizedBox(height: 16),
+
+              // ── Progress & Gamification ────────────────────────
+              _ProgressCard(gamVm: gamVm),
               const SizedBox(height: 16),
 
               // ── Today's Habits ───────────────────────────────────
@@ -204,7 +219,7 @@ class _HomeTab extends StatelessWidget {
                         title: ls.t('todays_habits'),
                         color: AppColors.healthColor,
                         icon: Icons.spa_outlined,
-                        onAction: () => onNavigate(2),
+                        onAction: () => widget.onNavigate(2),
                       ),
                       const SizedBox(height: 12),
                       Row(
@@ -247,14 +262,14 @@ class _HomeTab extends StatelessWidget {
 
               // ── Active Ideas ─────────────────────────────────────
               SectionCard(
-                onTap: () => onNavigate(4),
+                onTap: () => widget.onNavigate(1),
                 child: Column(
                   children: [
                     ModuleHeader(
                       title: ls.t('active_ideas'),
                       color: AppColors.ideasColor,
                       icon: Icons.lightbulb_outline_rounded,
-                      onAction: () => onNavigate(4),
+                      onAction: () => widget.onNavigate(1),
                       actionLabel: '+ Add',
                     ),
                     const SizedBox(height: 12),
@@ -438,6 +453,237 @@ class _HomeTab extends StatelessWidget {
   }
 }
 
+class _ProgressCard extends StatelessWidget {
+  final GamificationViewModel gamVm;
+  const _ProgressCard({required this.gamVm});
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = gamVm.progress;
+    final score = gamVm.todayScoreValue;
+    final activeStreaks = gamVm.activeStreaks;
+    final missions = gamVm.todayMissions;
+    final completed = gamVm.missionsCompletedCount;
+    final total = gamVm.totalMissionsCount;
+
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const GamificationDashboardScreen()),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1A1030), Color(0xFF0D1117)],
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppColors.accent.withOpacity(0.3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header row: level + score
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.bolt_rounded,
+                      color: AppColors.accent, size: 18),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Level ${progress.level} · ${progress.levelTitle}',
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        '${progress.xpInCurrentLevel} / ${UserProgress.xpPerLevel} XP',
+                        style: const TextStyle(
+                            color: AppColors.textSecondary, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+                // Today's score circle
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [
+                        _scoreColor(score).withOpacity(0.25),
+                        _scoreColor(score).withOpacity(0.05),
+                      ],
+                    ),
+                    border: Border.all(
+                        color: _scoreColor(score).withOpacity(0.5), width: 2),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '$score',
+                      style: TextStyle(
+                        color: _scoreColor(score),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // XP progress bar
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: progress.levelProgress,
+                backgroundColor: AppColors.accent.withOpacity(0.12),
+                valueColor: const AlwaysStoppedAnimation(AppColors.accent),
+                minHeight: 5,
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // Streaks + Missions row
+            Row(
+              children: [
+                // Active streaks
+                if (activeStreaks.isNotEmpty) ...[
+                  ...activeStreaks.take(3).map((s) => Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(s.flameEmoji,
+                                  style: const TextStyle(fontSize: 12)),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${s.currentStreak}d',
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )),
+                ],
+                const Spacer(),
+                // Missions counter
+                if (total > 0)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: completed == total
+                          ? AppColors.accentGreen.withOpacity(0.15)
+                          : AppColors.surface,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          completed == total
+                              ? Icons.check_circle_rounded
+                              : Icons.flag_rounded,
+                          size: 14,
+                          color: completed == total
+                              ? AppColors.accentGreen
+                              : AppColors.accent,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$completed/$total missions',
+                          style: TextStyle(
+                            color: completed == total
+                                ? AppColors.accentGreen
+                                : AppColors.textSecondary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+
+            // Pending missions preview
+            if (missions.where((m) => !m.isCompleted).isNotEmpty) ...[
+              const SizedBox(height: 10),
+              ...missions
+                  .where((m) => !m.isCompleted)
+                  .take(2)
+                  .map((m) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          children: [
+                            Text(m.difficultyEmoji,
+                                style: const TextStyle(fontSize: 10)),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                m.title,
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 11,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Text(
+                              '+${m.xpReward} XP',
+                              style: const TextStyle(
+                                color: AppColors.accent,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _scoreColor(int score) {
+    if (score >= 80) return AppColors.accentGreen;
+    if (score >= 50) return AppColors.accent;
+    if (score >= 25) return const Color(0xFFF59E0B);
+    return AppColors.accentRed;
+  }
+}
+
 class _DigestCard extends StatelessWidget {
   final String digest;
   final bool loading;
@@ -596,11 +842,8 @@ class _BottomNav extends StatelessWidget {
     final items = [
       (Icons.home_rounded, Icons.home_outlined, ls.t('nav_home')),
       (Icons.work_rounded, Icons.work_outline_rounded, ls.t('nav_work')),
-      (Icons.spa_rounded, Icons.spa_outlined, ls.t('nav_health')),
+      (Icons.favorite_rounded, Icons.favorite_border_rounded, 'Life'),
       (Icons.account_balance_wallet_rounded, Icons.account_balance_wallet_outlined, ls.t('nav_finance')),
-      (Icons.lightbulb_rounded, Icons.lightbulb_outline_rounded, ls.t('nav_ideas')),
-      (Icons.favorite_rounded, Icons.favorite_border_rounded, ls.t('nav_family')),
-      (Icons.bolt_rounded, Icons.bolt_outlined, ls.t('nav_progress')),
     ];
 
     return Container(

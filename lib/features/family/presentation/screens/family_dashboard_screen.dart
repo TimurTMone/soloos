@@ -19,6 +19,7 @@ class FamilyDashboardScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       floatingActionButton: FloatingActionButton(
+        heroTag: 'family_fab',
         onPressed: () => _openAddPerson(context),
         child: const Icon(Icons.person_add_outlined),
       ),

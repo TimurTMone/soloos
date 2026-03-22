@@ -99,4 +99,40 @@ class IncomeStream {
         createdAt: DateTime.parse(j['createdAt']),
         updatedAt: DateTime.parse(j['updatedAt']),
       );
+
+  factory IncomeStream.fromRow(Map<String, dynamic> r) => IncomeStream(
+        id: r['id'],
+        title: r['title'] ?? '',
+        category: IncomeCategory.values.firstWhere(
+          (e) => e.name == r['category'],
+          orElse: () => IncomeCategory.other,
+        ),
+        amount: (r['amount'] as num?)?.toDouble() ?? 0,
+        currency: r['currency'] ?? 'USD',
+        frequency: ObligationFrequency.values.firstWhere(
+          (e) => e.name == r['frequency'],
+          orElse: () => ObligationFrequency.monthly,
+        ),
+        isOneTime: r['is_one_time'] ?? false,
+        date: r['date'] != null ? DateTime.tryParse(r['date']) : null,
+        isActive: r['is_active'] ?? true,
+        notes: r['notes'],
+        createdAt: DateTime.tryParse(r['created_at'] ?? '') ?? DateTime.now(),
+        updatedAt: DateTime.tryParse(r['updated_at'] ?? '') ?? DateTime.now(),
+      );
+
+  Map<String, dynamic> toRow() => {
+        'id': id,
+        'title': title,
+        'category': category.name,
+        'amount': amount,
+        'currency': currency,
+        'frequency': frequency.name,
+        'is_one_time': isOneTime,
+        'date': date?.toIso8601String(),
+        'is_active': isActive,
+        'notes': notes,
+        'created_at': createdAt.toIso8601String(),
+        'updated_at': updatedAt.toIso8601String(),
+      };
 }

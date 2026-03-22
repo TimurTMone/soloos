@@ -121,4 +121,49 @@ class DebtItem {
         createdAt: DateTime.parse(j['createdAt']),
         updatedAt: DateTime.parse(j['updatedAt']),
       );
+
+  factory DebtItem.fromRow(Map<String, dynamic> r) => DebtItem(
+        id: r['id'],
+        title: r['title'] ?? '',
+        creditorName: r['creditor_name'] ?? '',
+        category: DebtCategory.values.firstWhere(
+          (e) => e.name == r['category'],
+          orElse: () => DebtCategory.other,
+        ),
+        originalAmount: (r['original_amount'] as num?)?.toDouble() ?? 0,
+        remainingAmount: (r['remaining_amount'] as num?)?.toDouble() ?? 0,
+        currency: r['currency'] ?? 'USD',
+        dueDate: r['due_date'] != null ? DateTime.tryParse(r['due_date']) : null,
+        monthlyPaymentGoal: r['monthly_payment_goal'] != null
+            ? (r['monthly_payment_goal'] as num).toDouble()
+            : null,
+        notes: r['notes'],
+        priority: DebtPriority.values.firstWhere(
+          (e) => e.name == r['priority'],
+          orElse: () => DebtPriority.medium,
+        ),
+        status: DebtStatus.values.firstWhere(
+          (e) => e.name == r['status'],
+          orElse: () => DebtStatus.active,
+        ),
+        createdAt: DateTime.tryParse(r['created_at'] ?? '') ?? DateTime.now(),
+        updatedAt: DateTime.tryParse(r['updated_at'] ?? '') ?? DateTime.now(),
+      );
+
+  Map<String, dynamic> toRow() => {
+        'id': id,
+        'title': title,
+        'creditor_name': creditorName,
+        'category': category.name,
+        'original_amount': originalAmount,
+        'remaining_amount': remainingAmount,
+        'currency': currency,
+        'due_date': dueDate?.toIso8601String(),
+        'monthly_payment_goal': monthlyPaymentGoal,
+        'notes': notes,
+        'priority': priority.name,
+        'status': status.name,
+        'created_at': createdAt.toIso8601String(),
+        'updated_at': updatedAt.toIso8601String(),
+      };
 }

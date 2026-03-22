@@ -42,4 +42,27 @@ class Idea {
         createdAt: DateTime.tryParse(j['createdAt'] ?? '') ?? DateTime.now(),
         aiScript: j['aiScript'],
       );
+
+  factory Idea.fromRow(Map<String, dynamic> r) => Idea(
+        id: r['id'],
+        title: r['title'],
+        description: r['description'] ?? '',
+        status: IdeaStatus.values.firstWhere(
+          (e) => e.name == r['status'],
+          orElse: () => IdeaStatus.active,
+        ),
+        notes: List<String>.from(r['notes'] ?? []),
+        createdAt: DateTime.tryParse(r['created_at'] ?? '') ?? DateTime.now(),
+        aiScript: r['ai_script'],
+      );
+
+  Map<String, dynamic> toRow() => {
+        'id': id,
+        'title': title,
+        'description': description,
+        'status': status.name,
+        'notes': notes,
+        'ai_script': aiScript,
+        'created_at': createdAt.toIso8601String(),
+      };
 }

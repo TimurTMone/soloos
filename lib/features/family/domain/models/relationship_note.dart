@@ -67,4 +67,23 @@ class RelationshipNote {
         createdAt: DateTime.parse(j['createdAt']),
         updatedAt: DateTime.parse(j['updatedAt']),
       );
+
+  factory RelationshipNote.fromRow(Map<String, dynamic> r) => RelationshipNote(
+        id: r['id'],
+        personId: r['person_id'] ?? '',
+        content: r['content'] ?? '',
+        noteType: NoteType.values.firstWhere(
+          (e) => e.name == r['note_type'],
+          orElse: () => NoteType.other,
+        ),
+        createdAt: DateTime.tryParse(r['created_at'] ?? '') ?? DateTime.now(),
+      );
+
+  Map<String, dynamic> toRow() => {
+        'id': id,
+        'person_id': personId,
+        'content': content,
+        'note_type': noteType.name,
+        'created_at': createdAt.toIso8601String(),
+      };
 }

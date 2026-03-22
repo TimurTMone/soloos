@@ -151,4 +151,38 @@ class ObligationItem {
         createdAt: DateTime.parse(j['createdAt']),
         updatedAt: DateTime.parse(j['updatedAt']),
       );
+
+  factory ObligationItem.fromRow(Map<String, dynamic> r) => ObligationItem(
+        id: r['id'],
+        title: r['title'] ?? '',
+        category: ObligationCategory.values.firstWhere(
+          (e) => e.name == r['category'],
+          orElse: () => ObligationCategory.other,
+        ),
+        amount: (r['amount'] as num?)?.toDouble() ?? 0,
+        currency: r['currency'] ?? 'USD',
+        frequency: ObligationFrequency.values.firstWhere(
+          (e) => e.name == r['frequency'],
+          orElse: () => ObligationFrequency.monthly,
+        ),
+        dueDayOfMonth: r['due_day_of_month'],
+        notes: r['notes'],
+        isActive: r['is_active'] ?? true,
+        createdAt: DateTime.tryParse(r['created_at'] ?? '') ?? DateTime.now(),
+        updatedAt: DateTime.tryParse(r['updated_at'] ?? '') ?? DateTime.now(),
+      );
+
+  Map<String, dynamic> toRow() => {
+        'id': id,
+        'title': title,
+        'category': category.name,
+        'amount': amount,
+        'currency': currency,
+        'frequency': frequency.name,
+        'due_day_of_month': dueDayOfMonth,
+        'notes': notes,
+        'is_active': isActive,
+        'created_at': createdAt.toIso8601String(),
+        'updated_at': updatedAt.toIso8601String(),
+      };
 }

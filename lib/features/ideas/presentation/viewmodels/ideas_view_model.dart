@@ -1,24 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
-import '../../../../models/app_models.dart';
+import '../../domain/models/idea.dart';
 import '../../../gamification/data/services/gamification_event_bus.dart';
 import '../../../gamification/domain/models/gamification_event.dart';
 import '../../../../services/storage_service.dart';
+import '../../../../services/supabase_service.dart';
 import '../../../../services/claude_service.dart';
 
-/// ViewModel for the Ideas feature.
-///
-/// Owns all business logic that was previously scattered across
-/// [_IdeasScreenState] and [_IdeaCardState] in ideas_screen.dart:
-///
-/// - idea list management (load, add, delete)
-/// - status transitions (archive, activate)
-/// - AI validation via ClaudeService
-/// - AI script generation via ClaudeService
-/// - per-idea loading state (validating / scripting)
-///
-/// The screen and cards become pure observers — they call methods
-/// on this ViewModel and render its state.
 class IdeasViewModel extends ChangeNotifier {
   IdeasViewModel({
     StorageService? storage,
@@ -32,14 +20,12 @@ class IdeasViewModel extends ChangeNotifier {
   final ClaudeService _claude;
 
   List<Idea> _ideas = [];
-
-  /// Which idea ID is currently being AI-validated (null = none).
+  bool _loading = false;
   String? _validatingId;
-
-  /// Which idea ID is currently having a script generated (null = none).
   String? _scriptingId;
 
-  // ── Getters ────────────────────────────────────────────────────
+  List<Idea> get ideas => _ideas;
+  bool get loading => _loading;
 
   List<Idea> get activeIdeas =>
       _ideas.where((i) => i.status == IdeaStatus.active).toList();
@@ -52,77 +38,101 @@ class IdeasViewModel extends ChangeNotifier {
 
   bool get atActiveLimit => activeIdeas.length >= 3;
 
-  // ── Load ───────────────────────────────────────────────────────
+  bool get _useDb => SupabaseService.isAuthenticated;
 
-  void _loadIdeas() {
-    _ideas = _storage.getIdeas();
+  Future<void> _loadIdeas() async {
+    _loading = true;
+    notifyListeners();
+
+    try {
+      if (_useDb) {
+        final rows = await SupabaseService.getAll('ideas', orderBy: 'created_at');
+        _ideas = rows.map((r) => Idea.fromRow(r)).toList();
+      } else {
+        _ideas = _storage.getIdeas();
+      }
+    } catch (_) {
+      _ideas = _storage.getIdeas();
+    }
+
+    _loading = false;
     notifyListeners();
   }
 
   void reload() => _loadIdeas();
 
-  // ── Add ────────────────────────────────────────────────────────
-
-  /// Returns false if at the 3-idea limit (caller shows snackbar).
   Future<bool> addIdea({required String title, required String description}) async {
     if (atActiveLimit) return false;
     if (title.trim().isEmpty) return false;
 
-    final all = _storage.getIdeas()
-      ..add(Idea(
-        id: const Uuid().v4(),
-        title: title.trim(),
-        description: description.trim(),
-      ));
+    final idea = Idea(
+      id: const Uuid().v4(),
+      title: title.trim(),
+      description: description.trim(),
+    );
+
+    if (_useDb) {
+      final row = idea.toRow();
+      row['user_id'] = SupabaseService.userId;
+      await SupabaseService.client.from('ideas').insert(row);
+    }
+
+    final all = _storage.getIdeas()..add(idea);
     await _storage.saveIdeas(all);
     GamificationEventBus.emit(GamificationEventType.ideaCreated,
         description: title.trim());
-    _loadIdeas();
+    await _loadIdeas();
     return true;
   }
 
-  // ── Delete ─────────────────────────────────────────────────────
-
   Future<void> deleteIdea(String ideaId) async {
+    if (_useDb) {
+      await SupabaseService.delete('ideas', ideaId);
+    }
     final all = _storage.getIdeas()..removeWhere((i) => i.id == ideaId);
     await _storage.saveIdeas(all);
-    _loadIdeas();
+    await _loadIdeas();
   }
 
-  // ── Status ─────────────────────────────────────────────────────
-
   Future<void> updateStatus(String ideaId, IdeaStatus status) async {
+    if (_useDb) {
+      await SupabaseService.update('ideas', ideaId, {'status': status.name});
+    }
+
     final all = _storage.getIdeas();
     final idx = all.indexWhere((i) => i.id == ideaId);
     if (idx != -1) all[idx].status = status;
     await _storage.saveIdeas(all);
+
     if (status == IdeaStatus.active) {
       GamificationEventBus.emit(GamificationEventType.ideaActedOn);
     }
-    _loadIdeas();
+    await _loadIdeas();
   }
 
-  // ── AI: Validate ───────────────────────────────────────────────
-
   Future<void> validateIdea(Idea idea) async {
-    if (_validatingId != null) return; // already working on one
+    if (_validatingId != null) return;
     _validatingId = idea.id;
     notifyListeners();
 
     final result = await _claude.validateIdea(idea.title, idea.description);
 
+    idea.notes.insert(0, '🤖 AI Validation:\n$result');
+
+    if (_useDb) {
+      await SupabaseService.update('ideas', idea.id, {'notes': idea.notes});
+    }
+
     final all = _storage.getIdeas();
     final idx = all.indexWhere((i) => i.id == idea.id);
     if (idx != -1) {
-      all[idx].notes.insert(0, '🤖 AI Validation:\n$result');
+      all[idx].notes = idea.notes;
       await _storage.saveIdeas(all);
     }
 
     _validatingId = null;
-    _loadIdeas();
+    await _loadIdeas();
   }
-
-  // ── AI: Generate Script ────────────────────────────────────────
 
   Future<void> generateScript(Idea idea, String platform) async {
     if (_scriptingId != null) return;
@@ -135,6 +145,12 @@ class IdeasViewModel extends ChangeNotifier {
       angle: idea.description,
     );
 
+    idea.aiScript = script;
+
+    if (_useDb) {
+      await SupabaseService.update('ideas', idea.id, {'ai_script': script});
+    }
+
     final all = _storage.getIdeas();
     final idx = all.indexWhere((i) => i.id == idea.id);
     if (idx != -1) {
@@ -143,6 +159,6 @@ class IdeasViewModel extends ChangeNotifier {
     }
 
     _scriptingId = null;
-    _loadIdeas();
+    await _loadIdeas();
   }
 }

@@ -104,6 +104,7 @@ class ProjectsScreen extends StatelessWidget {
               ),
             ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'projects_fab',
         onPressed: () => _showAddDialog(context, vm),
         child: const Icon(Icons.add),
       ),

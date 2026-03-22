@@ -36,4 +36,27 @@ class Task {
         dueDate: j['dueDate'] != null ? DateTime.tryParse(j['dueDate']) : null,
         createdAt: DateTime.tryParse(j['createdAt'] ?? '') ?? DateTime.now(),
       );
+
+  /// Supabase row → Task
+  factory Task.fromRow(Map<String, dynamic> r) => Task(
+        id: r['id'],
+        title: r['title'],
+        notes: r['notes'] ?? '',
+        isDone: r['is_done'] ?? false,
+        priority: r['priority'] ?? 'medium',
+        dueDate: r['due_date'] != null ? DateTime.tryParse(r['due_date']) : null,
+        createdAt: DateTime.tryParse(r['created_at'] ?? '') ?? DateTime.now(),
+      );
+
+  /// Task → Supabase row (excludes user_id — added by SupabaseService)
+  Map<String, dynamic> toRow(String projectId) => {
+        'id': id,
+        'project_id': projectId,
+        'title': title,
+        'notes': notes,
+        'is_done': isDone,
+        'priority': priority,
+        'due_date': dueDate?.toIso8601String(),
+        'created_at': createdAt.toIso8601String(),
+      };
 }

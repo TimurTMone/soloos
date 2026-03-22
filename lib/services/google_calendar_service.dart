@@ -11,13 +11,17 @@ class GoogleCalendarService extends ChangeNotifier {
   factory GoogleCalendarService() => _instance;
   GoogleCalendarService._internal();
 
-  final _googleSignIn = GoogleSignIn(
-    scopes: [
-      gcal.CalendarApi.calendarReadonlyScope,
-      gcal.CalendarApi.calendarEventsScope,
-      gpeople.PeopleServiceApi.contactsReadonlyScope,
-    ],
-  );
+  GoogleSignIn? _googleSignInInstance;
+  GoogleSignIn get _googleSignIn {
+    _googleSignInInstance ??= GoogleSignIn(
+      scopes: [
+        gcal.CalendarApi.calendarReadonlyScope,
+        gcal.CalendarApi.calendarEventsScope,
+        gpeople.PeopleServiceApi.contactsReadonlyScope,
+      ],
+    );
+    return _googleSignInInstance!;
+  }
 
   GoogleSignInAccount? _currentUser;
   bool get isSignedIn => _currentUser != null;
