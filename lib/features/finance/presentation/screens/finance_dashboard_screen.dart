@@ -20,11 +20,6 @@ class FinanceDashboardScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showManualAddSheet(context),
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.add),
-      ),
       body: Column(
         children: [
           Expanded(
@@ -63,6 +58,7 @@ class FinanceDashboardScreen extends StatelessWidget {
           ),
           QuickAddBar(
             isLoading: vm.isParsingInput,
+            onManualAdd: () => _showManualAddSheet(context),
             onSubmit: (text) async {
               await vm.parseInput(text);
               if (vm.pendingInput != null && context.mounted) {

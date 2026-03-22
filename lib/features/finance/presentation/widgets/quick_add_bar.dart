@@ -4,11 +4,13 @@ import '../../../../theme/app_theme.dart';
 class QuickAddBar extends StatefulWidget {
   final bool isLoading;
   final void Function(String text) onSubmit;
+  final VoidCallback? onManualAdd;
 
   const QuickAddBar({
     super.key,
     required this.isLoading,
     required this.onSubmit,
+    this.onManualAdd,
   });
 
   @override
@@ -62,7 +64,7 @@ class _QuickAddBarState extends State<QuickAddBar> {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.fromLTRB(
-          16, 12, 16, MediaQuery.of(context).padding.bottom + 12),
+          12, 10, 12, MediaQuery.of(context).padding.bottom + 10),
       decoration: const BoxDecoration(
         color: AppColors.surface,
         border: Border(
@@ -71,6 +73,19 @@ class _QuickAddBarState extends State<QuickAddBar> {
       ),
       child: Row(
         children: [
+          if (widget.onManualAdd != null) ...[
+            SizedBox(
+              width: 40,
+              height: 40,
+              child: IconButton(
+                onPressed: widget.onManualAdd,
+                icon: const Icon(Icons.add_circle_outline, color: AppColors.primary, size: 24),
+                padding: EdgeInsets.zero,
+                tooltip: 'Add manually',
+              ),
+            ),
+            const SizedBox(width: 4),
+          ],
           Expanded(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 400),
@@ -84,25 +99,24 @@ class _QuickAddBarState extends State<QuickAddBar> {
                   hintStyle: const TextStyle(
                       color: AppColors.textMuted, fontSize: 13),
                   prefixIcon: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
-                    child: Text('✨',
-                        style: TextStyle(fontSize: 18)),
+                    padding: EdgeInsets.symmetric(horizontal: 10),
+                    child: Text('✨', style: TextStyle(fontSize: 16)),
                   ),
                   prefixIconConstraints:
-                      const BoxConstraints(minWidth: 44, minHeight: 0),
+                      const BoxConstraints(minWidth: 36, minHeight: 0),
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 12),
+                      horizontal: 12, vertical: 11),
                 ),
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => _submit(),
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           SizedBox(
-            width: 44,
-            height: 44,
+            width: 40,
+            height: 40,
             child: widget.isLoading
                 ? const Center(
                     child: SizedBox(
@@ -119,7 +133,7 @@ class _QuickAddBarState extends State<QuickAddBar> {
                     style: ElevatedButton.styleFrom(
                       padding: EdgeInsets.zero,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(10)),
                     ),
                     child: const Icon(Icons.arrow_upward, size: 18),
                   ),
