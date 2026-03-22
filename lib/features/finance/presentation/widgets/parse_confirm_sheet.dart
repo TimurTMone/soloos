@@ -48,6 +48,8 @@ class _ParseConfirmSheetState extends State<ParseConfirmSheet> {
   // Income-specific
   IncomeCategory? _incomeCategory;
   ObligationFrequency? _incomeFrequency;
+  bool _incomeIsOneTime = false;
+  DateTime? _incomeDate;
 
   // Expense-specific
   ExpenseCategory? _expenseCategory;
@@ -82,6 +84,8 @@ class _ParseConfirmSheetState extends State<ParseConfirmSheet> {
       _currency = i.currency.value;
       _incomeCategory = i.category.value;
       _incomeFrequency = i.frequency.value;
+      _incomeIsOneTime = i.isOneTime.value;
+      _incomeDate = i.date.value;
     } else if (p.isExpense) {
       final e = p.expense!;
       _title = e.title.value;
@@ -248,6 +252,14 @@ class _ParseConfirmSheetState extends State<ParseConfirmSheet> {
           child: _EditableText(value: _title, onChanged: (v) => setState(() => _title = v)),
         ),
         _FieldRow(
+          label: 'Type', uncertain: false,
+          child: _SegmentedPicker(
+            options: ['Recurring', 'One-time'],
+            selected: _incomeIsOneTime ? 1 : 0,
+            onChanged: (idx) => setState(() => _incomeIsOneTime = idx == 1),
+          ),
+        ),
+        _FieldRow(
           label: 'Category', uncertain: i.category.needsConfirmation,
           child: _CategoryDropdown<IncomeCategory>(
             value: _incomeCategory ?? IncomeCategory.other,
@@ -264,15 +276,25 @@ class _ParseConfirmSheetState extends State<ParseConfirmSheet> {
             onCurrencyChanged: (v) => setState(() => _currency = v),
           ),
         ),
-        _FieldRow(
-          label: 'Frequency', uncertain: i.frequency.needsConfirmation,
-          child: _CategoryDropdown<ObligationFrequency>(
-            value: _incomeFrequency ?? ObligationFrequency.monthly,
-            values: ObligationFrequency.values,
-            label: (f) => f.label,
-            onChanged: (v) => setState(() => _incomeFrequency = v),
+        if (_incomeIsOneTime)
+          _FieldRow(
+            label: 'Date', uncertain: false,
+            child: _DatePicker(
+              date: _incomeDate,
+              onChanged: (v) { if (v != null) setState(() => _incomeDate = v); },
+              allowPast: true,
+            ),
+          )
+        else
+          _FieldRow(
+            label: 'Frequency', uncertain: !_incomeIsOneTime && i.frequency.needsConfirmation,
+            child: _CategoryDropdown<ObligationFrequency>(
+              value: _incomeFrequency ?? ObligationFrequency.monthly,
+              values: ObligationFrequency.values,
+              label: (f) => f.label,
+              onChanged: (v) => setState(() => _incomeFrequency = v),
+            ),
           ),
-        ),
       ],
     );
   }
@@ -343,6 +365,8 @@ class _ParseConfirmSheetState extends State<ParseConfirmSheet> {
         amount: _amount,
         currency: _currency,
         frequency: _incomeFrequency ?? ObligationFrequency.monthly,
+        isOneTime: _incomeIsOneTime,
+        date: _incomeIsOneTime ? (_incomeDate ?? DateTime.now()) : null,
       ));
     } else if (p.isExpense) {
       widget.onConfirmExpense(Expense(

@@ -131,6 +131,8 @@ class ParsedIncome {
   final ParsedField<double> amount;
   final ParsedField<String> currency;
   final ParsedField<ObligationFrequency> frequency;
+  final ParsedField<bool> isOneTime;
+  final ParsedField<DateTime?> date;
   final String? notes;
 
   const ParsedIncome({
@@ -139,15 +141,18 @@ class ParsedIncome {
     required this.amount,
     required this.currency,
     required this.frequency,
+    ParsedField<bool>? isOneTime,
+    ParsedField<DateTime?>? date,
     this.notes,
-  });
+  })  : isOneTime = isOneTime ?? const ParsedField(value: false, confidence: 0.9),
+        date = date ?? const ParsedField(value: null, confidence: 0.9);
 
   List<String> get ambiguousFields {
     final fields = <String>[];
     if (title.needsConfirmation) fields.add('title');
     if (category.needsConfirmation) fields.add('category');
     if (amount.needsConfirmation) fields.add('amount');
-    if (frequency.needsConfirmation) fields.add('frequency');
+    if (!isOneTime.value && frequency.needsConfirmation) fields.add('frequency');
     return fields;
   }
 
@@ -159,6 +164,8 @@ class ParsedIncome {
         amount: amount.value,
         currency: currency.value,
         frequency: frequency.value,
+        isOneTime: isOneTime.value,
+        date: date.value,
         notes: notes,
       );
 }

@@ -58,6 +58,17 @@ class FinanceViewModel extends ChangeNotifier {
   List<IncomeStream> get incomeStreams => List.unmodifiable(_incomeStreams);
   List<IncomeStream> get activeIncomeStreams =>
       _incomeStreams.where((i) => i.isActive).toList();
+  List<IncomeStream> get recurringIncomeStreams =>
+      activeIncomeStreams.where((i) => !i.isOneTime).toList();
+  List<IncomeStream> get oneTimeIncomes =>
+      activeIncomeStreams.where((i) => i.isOneTime).toList();
+
+  List<IncomeStream> get thisMonthOneTimeIncomes {
+    final now = DateTime.now();
+    return oneTimeIncomes
+        .where((i) => i.date != null && i.date!.month == now.month && i.date!.year == now.year)
+        .toList();
+  }
   List<Expense> get expenses => List.unmodifiable(_expenses);
 
   List<Expense> get thisMonthExpenses {
@@ -79,13 +90,16 @@ class FinanceViewModel extends ChangeNotifier {
       subscriptions.fold(0, (sum, o) => sum + o.monthlyCost);
 
   double get totalMonthlyIncome =>
-      activeIncomeStreams.fold(0.0, (sum, i) => sum + i.monthlyIncome);
+      recurringIncomeStreams.fold(0.0, (sum, i) => sum + i.monthlyIncome);
+
+  double get totalOneTimeIncomeThisMonth =>
+      thisMonthOneTimeIncomes.fold(0.0, (sum, i) => sum + i.amount);
 
   double get totalMonthlyExpenses =>
       thisMonthExpenses.fold(0.0, (sum, e) => sum + e.amount);
 
   double get monthlyCashFlow =>
-      totalMonthlyIncome - totalMonthlyObligations - totalMonthlyExpenses;
+      totalMonthlyIncome + totalOneTimeIncomeThisMonth - totalMonthlyObligations - totalMonthlyExpenses;
 
   /// Recommended next payment: highest priority active debt with due date
   DebtItem? get recommendedNextPayment {

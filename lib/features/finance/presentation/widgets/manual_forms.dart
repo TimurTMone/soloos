@@ -382,6 +382,8 @@ class _ManualIncomeFormState extends State<ManualIncomeForm> {
   IncomeCategory _category = IncomeCategory.other;
   ObligationFrequency _frequency = ObligationFrequency.monthly;
   String _currency = 'USD';
+  bool _isOneTime = false;
+  DateTime _date = DateTime.now();
 
   @override
   void dispose() {
@@ -400,13 +402,15 @@ class _ManualIncomeFormState extends State<ManualIncomeForm> {
       amount: amount,
       currency: _currency,
       frequency: _frequency,
+      isOneTime: _isOneTime,
+      date: _isOneTime ? _date : null,
     ));
   }
 
   @override
   Widget build(BuildContext context) {
     return _FormShell(
-      title: '💰 Add Income Stream',
+      title: '💰 Add Income',
       onSave: _save,
       saveLabel: 'Save Income',
       children: [
@@ -415,8 +419,70 @@ class _ManualIncomeFormState extends State<ManualIncomeForm> {
           controller: _titleCtrl,
           autofocus: true,
           style: const TextStyle(color: AppColors.textPrimary),
-          decoration:
-              const InputDecoration(hintText: 'e.g. Freelance, YouTube'),
+          decoration: InputDecoration(
+            hintText: _isOneTime
+                ? 'e.g. App Dev project, Chalet booking'
+                : 'e.g. Freelance, YouTube',
+          ),
+        ),
+        const SizedBox(height: 12),
+        // One-time toggle
+        Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _isOneTime = false),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: !_isOneTime
+                        ? AppColors.primary.withOpacity(0.2)
+                        : AppColors.surface,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                        color: !_isOneTime
+                            ? AppColors.primary
+                            : AppColors.textMuted),
+                  ),
+                  child: Text('Recurring',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          color: !_isOneTime
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
+                          fontSize: 13,
+                          fontWeight: !_isOneTime ? FontWeight.w600 : FontWeight.normal)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _isOneTime = true),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: _isOneTime
+                        ? AppColors.primary.withOpacity(0.2)
+                        : AppColors.surface,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                        color: _isOneTime
+                            ? AppColors.primary
+                            : AppColors.textMuted),
+                  ),
+                  child: Text('One-time',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          color: _isOneTime
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
+                          fontSize: 13,
+                          fontWeight: _isOneTime ? FontWeight.w600 : FontWeight.normal)),
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
         _AmountCurrencyRow(
@@ -440,20 +506,29 @@ class _ManualIncomeFormState extends State<ManualIncomeForm> {
           onChanged: (v) => setState(() => _category = v ?? _category),
         ),
         const SizedBox(height: 12),
-        _label('Frequency'),
-        DropdownButtonFormField<ObligationFrequency>(
-          value: _frequency,
-          decoration: const InputDecoration(isDense: true),
-          dropdownColor: AppColors.card,
-          style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
-          items: ObligationFrequency.values
-              .map((f) => DropdownMenuItem(
-                    value: f,
-                    child: Text(f.label),
-                  ))
-              .toList(),
-          onChanged: (v) => setState(() => _frequency = v ?? _frequency),
-        ),
+        if (_isOneTime) ...[
+          _label('Date'),
+          _DatePickerField(
+            date: _date,
+            onChanged: (d) { if (d != null) setState(() => _date = d); },
+            allowPast: true,
+          ),
+        ] else ...[
+          _label('Frequency'),
+          DropdownButtonFormField<ObligationFrequency>(
+            value: _frequency,
+            decoration: const InputDecoration(isDense: true),
+            dropdownColor: AppColors.card,
+            style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+            items: ObligationFrequency.values
+                .map((f) => DropdownMenuItem(
+                      value: f,
+                      child: Text(f.label),
+                    ))
+                .toList(),
+            onChanged: (v) => setState(() => _frequency = v ?? _frequency),
+          ),
+        ],
       ],
     );
   }

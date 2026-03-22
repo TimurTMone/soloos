@@ -1,7 +1,7 @@
 import 'package:uuid/uuid.dart';
 import 'obligation_item.dart'; // reuse ObligationFrequency
 
-enum IncomeCategory { freelance, salary, project, youtube, sponsorship, investment, other }
+enum IncomeCategory { freelance, salary, project, youtube, sponsorship, investment, realEstate, other }
 
 extension IncomeCategoryLabel on IncomeCategory {
   String get label {
@@ -12,6 +12,7 @@ extension IncomeCategoryLabel on IncomeCategory {
       case IncomeCategory.youtube: return 'YouTube';
       case IncomeCategory.sponsorship: return 'Sponsorship';
       case IncomeCategory.investment: return 'Investment';
+      case IncomeCategory.realEstate: return 'Real Estate';
       case IncomeCategory.other: return 'Other';
     }
   }
@@ -24,6 +25,7 @@ extension IncomeCategoryLabel on IncomeCategory {
       case IncomeCategory.youtube: return '▶️';
       case IncomeCategory.sponsorship: return '🤝';
       case IncomeCategory.investment: return '📈';
+      case IncomeCategory.realEstate: return '🏠';
       case IncomeCategory.other: return '💰';
     }
   }
@@ -36,6 +38,8 @@ class IncomeStream {
   final double amount;
   final String currency;
   final ObligationFrequency frequency;
+  final bool isOneTime;
+  final DateTime? date; // for one-time income
   final bool isActive;
   final String? notes;
   final DateTime createdAt;
@@ -48,6 +52,8 @@ class IncomeStream {
     required this.amount,
     this.currency = 'USD',
     this.frequency = ObligationFrequency.monthly,
+    this.isOneTime = false,
+    this.date,
     this.isActive = true,
     this.notes,
     DateTime? createdAt,
@@ -56,7 +62,7 @@ class IncomeStream {
         createdAt = createdAt ?? DateTime.now(),
         updatedAt = updatedAt ?? DateTime.now();
 
-  double get monthlyIncome => frequency.monthlyAmount(amount);
+  double get monthlyIncome => isOneTime ? 0.0 : frequency.monthlyAmount(amount);
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -65,6 +71,8 @@ class IncomeStream {
         'amount': amount,
         'currency': currency,
         'frequency': frequency.name,
+        'isOneTime': isOneTime,
+        'date': date?.toIso8601String(),
         'isActive': isActive,
         'notes': notes,
         'createdAt': createdAt.toIso8601String(),
@@ -84,6 +92,8 @@ class IncomeStream {
           (e) => e.name == j['frequency'],
           orElse: () => ObligationFrequency.monthly,
         ),
+        isOneTime: j['isOneTime'] ?? false,
+        date: j['date'] != null ? DateTime.parse(j['date']) : null,
         isActive: j['isActive'] ?? true,
         notes: j['notes'],
         createdAt: DateTime.parse(j['createdAt']),

@@ -24,6 +24,8 @@ class _QuickAddBarState extends State<QuickAddBar> {
     'e.g. "I owe John \$500"',
     'e.g. "Spotify \$10/month"',
     'e.g. "YouTube revenue \$800/month"',
+    'e.g. "Got paid \$2000 for app dev"',
+    'e.g. "Chalet booking \$500"',
     'e.g. "Rent \$800 every month"',
   ];
 

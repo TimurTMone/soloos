@@ -35,10 +35,16 @@ class FinanceDashboardScreen extends StatelessWidget {
                 _SliverSection(title: '💡 Recommended Next Payment', child: _RecommendedCard(vm: vm)),
                 _SliverSection(title: '📅 Due This Week', child: _DueThisWeek(vm: vm)),
                 _SliverSection(
-                  title: '💰 Income Streams',
+                  title: '💰 Recurring Income',
                   trailing: '\$${_fmt(vm.totalMonthlyIncome)}/mo',
-                  child: _IncomeList(vm: vm),
+                  child: _IncomeList(incomes: vm.recurringIncomeStreams, emptyMsg: 'No recurring income'),
                 ),
+                if (vm.oneTimeIncomes.isNotEmpty)
+                  _SliverSection(
+                    title: '💵 One-Time Income',
+                    trailing: '\$${_fmt(vm.totalOneTimeIncomeThisMonth)} this month',
+                    child: _IncomeList(incomes: vm.oneTimeIncomes, emptyMsg: 'No one-time income', isOneTime: true),
+                  ),
                 _SliverSection(
                   title: '💸 Recent Expenses',
                   trailing: '\$${_fmt(vm.totalMonthlyExpenses)} this month',
@@ -508,23 +514,26 @@ class _DueThisWeekTile extends StatelessWidget {
 // ── Income list ──────────────────────────────────────────────────────────────
 
 class _IncomeList extends StatelessWidget {
-  final FinanceViewModel vm;
-  const _IncomeList({required this.vm});
+  final List<IncomeStream> incomes;
+  final String emptyMsg;
+  final bool isOneTime;
+  const _IncomeList({required this.incomes, required this.emptyMsg, this.isOneTime = false});
 
   @override
   Widget build(BuildContext context) {
-    if (vm.activeIncomeStreams.isEmpty) {
-      return const _EmptyState(icon: '💰', message: 'No income streams added');
+    if (incomes.isEmpty) {
+      return _EmptyState(icon: '💰', message: emptyMsg);
     }
     return Column(
-      children: vm.activeIncomeStreams.map((i) => _IncomeTile(income: i)).toList(),
+      children: incomes.map((i) => _IncomeTile(income: i, isOneTime: isOneTime)).toList(),
     );
   }
 }
 
 class _IncomeTile extends StatelessWidget {
   final IncomeStream income;
-  const _IncomeTile({required this.income});
+  final bool isOneTime;
+  const _IncomeTile({required this.income, this.isOneTime = false});
 
   @override
   Widget build(BuildContext context) {
@@ -546,9 +555,15 @@ class _IncomeTile extends StatelessWidget {
                 Text(income.title,
                     style: const TextStyle(
                         color: AppColors.textPrimary, fontSize: 14)),
-                Text(income.frequency.label,
-                    style: const TextStyle(
-                        color: AppColors.textSecondary, fontSize: 11)),
+                Text(
+                  isOneTime
+                      ? (income.date != null
+                          ? '${income.date!.month}/${income.date!.day}'
+                          : 'One-time')
+                      : income.frequency.label,
+                  style: const TextStyle(
+                      color: AppColors.textSecondary, fontSize: 11),
+                ),
               ],
             ),
           ),
@@ -559,7 +574,7 @@ class _IncomeTile extends StatelessWidget {
                   style: const TextStyle(
                       color: AppColors.accentGreen,
                       fontWeight: FontWeight.w600)),
-              if (income.frequency != ObligationFrequency.monthly)
+              if (!isOneTime && income.frequency != ObligationFrequency.monthly)
                 Text('\$${_fmt(income.monthlyIncome)}/mo',
                     style: const TextStyle(
                         color: AppColors.textSecondary, fontSize: 11)),

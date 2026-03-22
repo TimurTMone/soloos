@@ -60,19 +60,22 @@ For OBLIGATION entries (recurring payment):
   }
 }
 
-For INCOME entries (recurring income source):
+For INCOME entries (recurring or one-time income):
 {
   "type": "income",
   "title": "string",
-  "category": "freelance|salary|project|youtube|sponsorship|investment|other",
+  "category": "freelance|salary|project|youtube|sponsorship|investment|realEstate|other",
   "amount": number,
   "currency": "USD|KGS",
-  "frequency": "weekly|biweekly|monthly|quarterly|annual",
+  "is_one_time": true|false,
+  "frequency": "weekly|biweekly|monthly|quarterly|annual (only if is_one_time=false)",
+  "date": "YYYY-MM-DD (only if is_one_time=true, default today)",
   "notes": "string or null",
   "confidence": {
     "title": 0.0-1.0,
     "category": 0.0-1.0,
     "amount": 0.0-1.0,
+    "is_one_time": 0.0-1.0,
     "frequency": 0.0-1.0
   }
 }
@@ -100,6 +103,9 @@ Rules:
 - Treat "I owe", "borrowed from", "I need to pay back" as debt
 - Treat "I pay X for Y", "my X costs Y/month", "subscription" as obligation
 - Treat "I earn", "I make", "my income", "revenue from", "I get paid" as income
+- Treat "got paid for", "received \$X for", "booked", "sold for", "client paid" as one-time income (is_one_time=true)
+- Treat "chalet", "rental", "booking", "property" as category: realEstate
+- If income has no frequency words ("per month", "monthly", etc.) and sounds like a single event, set is_one_time=true
 - Treat "I spent", "I bought", "cost me", "paid for" (one-time) as expense
 - Default currency USD unless user says "som", "сом", "KGS"
 - For expense date: default to today if not specified
@@ -247,6 +253,7 @@ Rules:
     }
 
     if (type == 'income') {
+      final oneTime = data['is_one_time'] == true;
       final parsed = ParsedIncome(
         title: ParsedField(
           value: data['title'] as String? ?? 'Unnamed income',
@@ -270,7 +277,15 @@ Rules:
         frequency: ParsedField(
           value: _parseFrequency(data['frequency']),
           confidence: c('frequency'),
-          needsConfirmation: needsConf('frequency'),
+          needsConfirmation: !oneTime && needsConf('frequency'),
+        ),
+        isOneTime: ParsedField(
+          value: oneTime,
+          confidence: c('is_one_time', fallback: 0.8),
+        ),
+        date: ParsedField(
+          value: oneTime ? (_parseDate(data['date']) ?? DateTime.now()) : null,
+          confidence: 0.8,
         ),
         notes: data['notes'] as String?,
       );
