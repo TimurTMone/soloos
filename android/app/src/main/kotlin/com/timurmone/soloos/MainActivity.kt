@@ -1,4 +1,4 @@
-package com.example.solo_os
+package com.timurmone.soloos
 
 import io.flutter.embedding.android.FlutterActivity
 

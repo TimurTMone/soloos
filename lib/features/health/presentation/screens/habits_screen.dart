@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../../widgets/common_widgets.dart';
@@ -207,8 +208,13 @@ class _HabitCard extends StatelessWidget {
       ),
       onDismissed: (_) => onDelete(),
       child: GestureDetector(
-        onTap: onToggle,
-        child: Container(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onToggle();
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOutCubic,
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
@@ -257,7 +263,9 @@ class _HabitCard extends StatelessWidget {
               ),
               _MiniCalendar(habit: habit),
               const SizedBox(width: 10),
-              Container(
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
                 width: 28,
                 height: 28,
                 decoration: BoxDecoration(
@@ -265,11 +273,11 @@ class _HabitCard extends StatelessWidget {
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: done ? AppColors.healthColor : AppColors.textMuted,
-                    width: 2,
+                    width: done ? 0 : 2,
                   ),
                 ),
                 child: done
-                    ? const Icon(Icons.check, color: Colors.white, size: 16)
+                    ? const Icon(Icons.check_rounded, color: Colors.white, size: 16)
                     : null,
               ),
             ],

@@ -101,7 +101,7 @@ class ProService extends ChangeNotifier {
     final alreadyUsed = _prefs!.getBool('trial_used') ?? false;
     if (alreadyUsed || _isPro) return false;
 
-    _trialEndsAt = DateTime.now().add(const Duration(days: 7));
+    _trialEndsAt = DateTime.now().add(const Duration(days: 30));
     await _prefs!.setString('trial_ends_at', _trialEndsAt!.toIso8601String());
     await _prefs!.setBool('trial_used', true);
     notifyListeners();

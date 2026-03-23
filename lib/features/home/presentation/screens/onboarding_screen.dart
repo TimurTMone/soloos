@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../../services/storage_service.dart';
+import '../../../../services/demo_data_seeder.dart';
+import '../../../../services/pro_service.dart';
 import 'dashboard_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -14,10 +16,9 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   final _nameController = TextEditingController();
-  final _apiKeyController = TextEditingController();
   final _storage = StorageService();
   int _currentPage = 0;
-  bool _apiKeyVisible = false;
+  bool _loadDemoData = false;
 
   final List<_OnboardPage> _pages = [
     _OnboardPage(
@@ -51,7 +52,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Future<void> _finish() async {
     final name = _nameController.text.trim();
-    final key = _apiKeyController.text.trim();
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter your name')),
@@ -59,7 +59,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       return;
     }
     await _storage.setUserName(name);
-    if (key.isNotEmpty) await _storage.setApiKey(key);
+    if (_loadDemoData) {
+      await DemoDataSeeder.seedIfEmpty(_storage);
+    }
+    // Start 30-day trial for new users
+    final pro = ProService();
+    await pro.init();
+    await pro.startTrial();
     await _storage.setOnboardingDone();
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
@@ -78,9 +84,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ..._pages.asMap().entries.map((e) => _IntroPage(page: e.value, onNext: _next)),
           _SetupPage(
             nameController: _nameController,
-            apiKeyController: _apiKeyController,
-            apiKeyVisible: _apiKeyVisible,
-            onToggleVisibility: () => setState(() => _apiKeyVisible = !_apiKeyVisible),
+            loadDemoData: _loadDemoData,
+            onToggleDemo: () => setState(() => _loadDemoData = !_loadDemoData),
             onFinish: _finish,
           ),
         ],
@@ -173,16 +178,14 @@ class _IntroPage extends StatelessWidget {
 
 class _SetupPage extends StatelessWidget {
   final TextEditingController nameController;
-  final TextEditingController apiKeyController;
-  final bool apiKeyVisible;
-  final VoidCallback onToggleVisibility;
+  final bool loadDemoData;
+  final VoidCallback onToggleDemo;
   final VoidCallback onFinish;
 
   const _SetupPage({
     required this.nameController,
-    required this.apiKeyController,
-    required this.apiKeyVisible,
-    required this.onToggleVisibility,
+    required this.loadDemoData,
+    required this.onToggleDemo,
     required this.onFinish,
   });
 
@@ -208,7 +211,7 @@ class _SetupPage extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Takes 30 seconds.',
+              'Takes 10 seconds. AI features included.',
               style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
             ),
             const SizedBox(height: 40),
@@ -232,38 +235,84 @@ class _SetupPage extends StatelessWidget {
               ),
               textCapitalization: TextCapitalization.words,
             ),
-            const SizedBox(height: 24),
-
-            // API Key
-            const Text(
-              'Claude API Key (for AI features)',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+              ),
+              child: const Row(
+                children: [
+                  Text('🎁', style: TextStyle(fontSize: 20)),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      '30-day free trial — all Pro features unlocked',
+                      style: TextStyle(
+                        color: AppColors.primaryLight,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: apiKeyController,
-              obscureText: !apiKeyVisible,
-              style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
-              decoration: InputDecoration(
-                hintText: 'sk-ant-api03-...',
-                prefixIcon: const Icon(Icons.key_outlined, color: AppColors.accent),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    apiKeyVisible ? Icons.visibility_off : Icons.visibility,
-                    color: AppColors.textMuted,
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: onToggleDemo,
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: loadDemoData
+                      ? AppColors.accentGreen.withOpacity(0.08)
+                      : AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: loadDemoData
+                        ? AppColors.accentGreen.withOpacity(0.3)
+                        : AppColors.textMuted.withOpacity(0.3),
                   ),
-                  onPressed: onToggleVisibility,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      loadDemoData
+                          ? Icons.check_circle_rounded
+                          : Icons.circle_outlined,
+                      color: loadDemoData
+                          ? AppColors.accentGreen
+                          : AppColors.textMuted,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Load sample data',
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          Text(
+                            'See how Solo OS works with example projects & habits',
+                            style: TextStyle(
+                              color: AppColors.textMuted,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Get your key at console.anthropic.com — can be added later in Settings',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 11),
             ),
             const SizedBox(height: 40),
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../../models/app_models.dart';
@@ -246,7 +247,10 @@ class _IdeaCardState extends State<_IdeaCard> {
         children: [
           // ── Header ──────────────────────────────────────────────
           GestureDetector(
-            onTap: () => setState(() => _expanded = !_expanded),
+            onTap: () {
+              HapticFeedback.selectionClick();
+              setState(() => _expanded = !_expanded);
+            },
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -284,11 +288,13 @@ class _IdeaCardState extends State<_IdeaCard> {
                       ],
                     ),
                   ),
-                  Icon(
-                    _expanded
-                        ? Icons.keyboard_arrow_up
-                        : Icons.keyboard_arrow_down,
-                    color: AppColors.textMuted,
+                  AnimatedRotation(
+                    turns: _expanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: const Icon(
+                      Icons.keyboard_arrow_down,
+                      color: AppColors.textMuted,
+                    ),
                   ),
                 ],
               ),
@@ -296,106 +302,117 @@ class _IdeaCardState extends State<_IdeaCard> {
           ),
 
           // ── Expanded body ────────────────────────────────────────
-          if (_expanded) ...[
-            const Divider(height: 1, color: Color(0xFF252535)),
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+          AnimatedCrossFade(
+            firstChild: const SizedBox.shrink(),
+            secondChild: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Divider(height: 1, color: Color(0xFF252535)),
+                Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _ActionBtn(
-                        label: isValidating ? '...' : '🤖 Validate',
-                        color: AppColors.ideasColor,
-                        onTap: isValidating
-                            ? null
-                            : () => vm.validateIdea(idea),
+                      Row(
+                        children: [
+                          _ActionBtn(
+                            label: isValidating ? '...' : '🤖 Validate',
+                            color: AppColors.ideasColor,
+                            onTap: isValidating
+                                ? null
+                                : () => vm.validateIdea(idea),
+                          ),
+                          const SizedBox(width: 8),
+                          _ActionBtn(
+                            label: isScripting ? '...' : '✍️ Script',
+                            color: AppColors.accentBlue,
+                            onTap: isScripting
+                                ? null
+                                : () => _pickPlatformAndGenerateScript(
+                                    context, vm),
+                          ),
+                          const SizedBox(width: 8),
+                          if (idea.status == IdeaStatus.active)
+                            _ActionBtn(
+                              label: '📦 Archive',
+                              color: AppColors.textSecondary,
+                              onTap: () =>
+                                  vm.updateStatus(idea.id, IdeaStatus.archived),
+                            )
+                          else
+                            _ActionBtn(
+                              label: '🔄 Activate',
+                              color: AppColors.accentGreen,
+                              onTap: () =>
+                                  vm.updateStatus(idea.id, IdeaStatus.active),
+                            ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      _ActionBtn(
-                        label: isScripting ? '...' : '✍️ Script',
-                        color: AppColors.accentBlue,
-                        onTap: isScripting
-                            ? null
-                            : () => _pickPlatformAndGenerateScript(
-                                context, vm),
-                      ),
-                      const SizedBox(width: 8),
-                      if (idea.status == IdeaStatus.active)
-                        _ActionBtn(
-                          label: '📦 Archive',
-                          color: AppColors.textSecondary,
-                          onTap: () =>
-                              vm.updateStatus(idea.id, IdeaStatus.archived),
-                        )
-                      else
-                        _ActionBtn(
-                          label: '🔄 Activate',
-                          color: AppColors.accentGreen,
-                          onTap: () =>
-                              vm.updateStatus(idea.id, IdeaStatus.active),
+                      if (idea.aiScript != null) ...[
+                        const SizedBox(height: 12),
+                        const Text(
+                          '📝 Content Script',
+                          style: TextStyle(
+                            color: AppColors.accentBlue,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.accentBlue.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                                color: AppColors.accentBlue.withOpacity(0.2)),
+                          ),
+                          child: Text(
+                            idea.aiScript!,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 12,
+                              height: 1.6,
+                            ),
+                          ),
+                        ),
+                      ],
+                      if (idea.notes.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        ...idea.notes.map((note) => Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: AppColors.surface,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                note,
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 12,
+                                  height: 1.5,
+                                ),
+                              ),
+                            )),
+                      ],
+                      if (isValidating || isScripting)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: AiThinkingWidget(
+                              message: 'AI is working on it...'),
                         ),
                     ],
                   ),
-                  if (idea.aiScript != null) ...[
-                    const SizedBox(height: 12),
-                    const Text(
-                      '📝 Content Script',
-                      style: TextStyle(
-                        color: AppColors.accentBlue,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.accentBlue.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                            color: AppColors.accentBlue.withOpacity(0.2)),
-                      ),
-                      child: Text(
-                        idea.aiScript!,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 12,
-                          height: 1.6,
-                        ),
-                      ),
-                    ),
-                  ],
-                  if (idea.notes.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    ...idea.notes.map((note) => Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            note,
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 12,
-                              height: 1.5,
-                            ),
-                          ),
-                        )),
-                  ],
-                  if (isValidating || isScripting)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8),
-                      child: AiThinkingWidget(
-                          message: 'AI is working on it...'),
-                    ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+            crossFadeState: _expanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 200),
+            sizeCurve: Curves.easeOutCubic,
+          ),
         ],
       ),
     );

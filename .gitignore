@@ -15,3 +15,4 @@ build/
 # Vercel API
 api/node_modules/
 api/dist/
+.vercel

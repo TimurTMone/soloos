@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../../theme/app_theme.dart';
@@ -863,7 +864,10 @@ class _BottomNav extends StatelessWidget {
               final selected = i == currentIndex;
               return Expanded(
                 child: GestureDetector(
-                  onTap: () => onTap(i),
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    onTap(i);
+                  },
                   child: Container(
                     color: Colors.transparent,
                     child: Column(
@@ -875,13 +879,14 @@ class _BottomNav extends StatelessWidget {
                           size: 22,
                         ),
                         const SizedBox(height: 2),
-                        Text(
-                          item.$3,
+                        AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 200),
                           style: TextStyle(
                             color: selected ? AppColors.primary : AppColors.textMuted,
                             fontSize: 10,
                             fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
                           ),
+                          child: Text(item.$3),
                         ),
                       ],
                     ),

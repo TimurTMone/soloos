@@ -9,7 +9,7 @@ import 'services/storage_service.dart';
 import 'services/locale_service.dart';
 import 'services/google_calendar_service.dart';
 import 'services/supabase_service.dart';
-import 'services/demo_data_seeder.dart';
+import 'services/notification_service.dart';
 import 'features/auth/presentation/screens/auth_screen.dart';
 import 'features/ideas/presentation/viewmodels/ideas_view_model.dart';
 import 'features/dashboard/presentation/viewmodels/dashboard_view_model.dart';
@@ -50,8 +50,10 @@ void main() async {
   final storage = StorageService();
   await storage.init();
 
-  // Seed demo data on first launch (no-op if data exists)
-  await DemoDataSeeder.seedIfEmpty(storage);
+  // Demo data is now opt-in via onboarding (no auto-seed)
+
+  // Initialize notifications
+  await NotificationService().init();
 
   final localeService = LocaleService();
   await localeService.init();

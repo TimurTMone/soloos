@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../../widgets/common_widgets.dart';
@@ -125,7 +126,8 @@ class _ProjectCard extends StatefulWidget {
   State<_ProjectCard> createState() => _ProjectCardState();
 }
 
-class _ProjectCardState extends State<_ProjectCard> {
+class _ProjectCardState extends State<_ProjectCard>
+    with SingleTickerProviderStateMixin {
   bool _expanded = false;
 
   Future<void> _addTask(ProjectsViewModel vm) async {
@@ -240,7 +242,10 @@ class _ProjectCardState extends State<_ProjectCard> {
       child: Column(
         children: [
           GestureDetector(
-            onTap: () => setState(() => _expanded = !_expanded),
+            onTap: () {
+              HapticFeedback.selectionClick();
+              setState(() => _expanded = !_expanded);
+            },
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -272,9 +277,13 @@ class _ProjectCardState extends State<_ProjectCard> {
                         style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
                       ),
                       const SizedBox(width: 8),
-                      Icon(
-                        _expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                        color: AppColors.textMuted,
+                      AnimatedRotation(
+                        turns: _expanded ? 0.5 : 0,
+                        duration: const Duration(milliseconds: 200),
+                        child: const Icon(
+                          Icons.keyboard_arrow_down,
+                          color: AppColors.textMuted,
+                        ),
                       ),
                     ],
                   ),
@@ -294,29 +303,40 @@ class _ProjectCardState extends State<_ProjectCard> {
               ),
             ),
           ),
-          if (_expanded) ...[
-            const Divider(height: 1, color: Color(0xFF252535)),
-            ...p.tasks.map((task) => _TaskTile(
-                  task: task,
-                  onToggle: () {
-                    vm.toggleTask(task);
-                    setState(() {});
-                  },
-                  onDelete: () {
-                    vm.deleteTask(p, task);
-                    setState(() {});
-                  },
-                )),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: TextButton.icon(
-                onPressed: () => _addTask(vm),
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text('Add task'),
-                style: TextButton.styleFrom(foregroundColor: AppColors.workColor),
-              ),
+          AnimatedCrossFade(
+            firstChild: const SizedBox.shrink(),
+            secondChild: Column(
+              children: [
+                const Divider(height: 1, color: Color(0xFF252535)),
+                ...p.tasks.map((task) => _TaskTile(
+                      task: task,
+                      onToggle: () {
+                        HapticFeedback.lightImpact();
+                        vm.toggleTask(task);
+                        setState(() {});
+                      },
+                      onDelete: () {
+                        vm.deleteTask(p, task);
+                        setState(() {});
+                      },
+                    )),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: TextButton.icon(
+                    onPressed: () => _addTask(vm),
+                    icon: const Icon(Icons.add, size: 16),
+                    label: const Text('Add task'),
+                    style: TextButton.styleFrom(foregroundColor: AppColors.workColor),
+                  ),
+                ),
+              ],
             ),
-          ],
+            crossFadeState: _expanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 200),
+            sizeCurve: Curves.easeOutCubic,
+          ),
         ],
       ),
     );
@@ -352,18 +372,21 @@ class _TaskTile extends StatelessWidget {
           children: [
             GestureDetector(
               onTap: onToggle,
-              child: Container(
-                width: 20,
-                height: 20,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutCubic,
+                width: 22,
+                height: 22,
                 decoration: BoxDecoration(
                   color: task.isDone ? AppColors.workColor : Colors.transparent,
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
                     color: task.isDone ? AppColors.workColor : AppColors.textMuted,
+                    width: task.isDone ? 0 : 1.5,
                   ),
                 ),
                 child: task.isDone
-                    ? const Icon(Icons.check, color: Colors.white, size: 12)
+                    ? const Icon(Icons.check_rounded, color: Colors.white, size: 14)
                     : null,
               ),
             ),

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../../services/storage_service.dart';
 import '../../../../services/locale_service.dart';
 import '../../../../services/google_calendar_service.dart';
+import '../../../../services/pro_service.dart';
+import '../../../../services/notification_service.dart';
 import '../../../home/presentation/screens/onboarding_screen.dart';
 import 'calendar_screen.dart';
 
@@ -16,15 +19,18 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final _storage = StorageService();
+  final _notifs = NotificationService();
   final _nameCtrl = TextEditingController();
   final _apiKeyCtrl = TextEditingController();
   bool _apiKeyVisible = false;
+  late bool _digestEnabled;
 
   @override
   void initState() {
     super.initState();
     _nameCtrl.text = _storage.userName;
     _apiKeyCtrl.text = _storage.apiKey;
+    _digestEnabled = _notifs.digestEnabled;
   }
 
   @override
@@ -104,6 +110,78 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   }).toList(),
                 ),
               ],
+            ),
+          ]),
+          const SizedBox(height: 14),
+
+          // ── Subscription ──────────────────────────────────────
+          _buildSubscriptionSection(loc),
+          const SizedBox(height: 14),
+
+          // ── Notifications ─────────────────────────────────────
+          _Section(title: 'NOTIFICATIONS', children: [
+            Row(
+              children: [
+                const Icon(Icons.notifications_active_rounded,
+                    color: AppColors.accent, size: 22),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Daily Digest',
+                          style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500)),
+                      Text('Morning summary at 8:00 AM',
+                          style: TextStyle(
+                              color: AppColors.textSecondary, fontSize: 12)),
+                    ],
+                  ),
+                ),
+                Switch.adaptive(
+                  value: _digestEnabled,
+                  activeColor: AppColors.primary,
+                  onChanged: (val) async {
+                    await _notifs.toggleDailyDigest(val);
+                    setState(() => _digestEnabled = val);
+                    if (val && mounted) {
+                      _snack('Daily digest enabled — see you at 8 AM!');
+                    }
+                  },
+                ),
+              ],
+            ),
+          ]),
+          const SizedBox(height: 14),
+
+          // ── Share & Invite ─────────────────────────────────────
+          _Section(title: 'SHARE', children: [
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Share.share(
+                    'I\'m using Solo OS to run my solopreneur life — '
+                    'finances, projects, habits, and AI ideas all in one place. '
+                    'Try it free for 30 days!\n\n'
+                    'https://soloos.app',
+                  );
+                },
+                icon: const Icon(Icons.share_rounded, size: 18),
+                label: const Text('Share Solo OS with a friend'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.accentGreen,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Word of mouth is our #1 growth channel. Share with a fellow solopreneur!',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+              textAlign: TextAlign.center,
             ),
           ]),
           const SizedBox(height: 14),
@@ -254,6 +332,128 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildSubscriptionSection(LocaleService loc) {
+    final pro = ProService();
+    final isActive = pro.hasAccess;
+    final isPro = pro.isPro;
+    final trialDays = pro.trialDaysLeft;
+
+    return _Section(
+      title: 'SUBSCRIPTION',
+      children: [
+        if (isPro) ...[
+          const Row(
+            children: [
+              Icon(Icons.workspace_premium_rounded, color: AppColors.accent, size: 24),
+              SizedBox(width: 10),
+              Text('Solo OS Pro', style: TextStyle(color: AppColors.accent, fontSize: 16, fontWeight: FontWeight.w700)),
+              Spacer(),
+              Text('Active', style: TextStyle(color: AppColors.accentGreen, fontSize: 13, fontWeight: FontWeight.w600)),
+            ],
+          ),
+        ] else if (isActive) ...[
+          Row(
+            children: [
+              const Icon(Icons.timer_outlined, color: AppColors.primaryLight, size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Free Trial', style: TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w600)),
+                    Text('$trialDays days remaining', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => _showUpgradeSheet(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              child: const Text('Upgrade to Pro', style: TextStyle(fontWeight: FontWeight.w700)),
+            ),
+          ),
+        ] else ...[
+          const Text(
+            'Your trial has ended. Upgrade to unlock all features.',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => _showUpgradeSheet(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              child: const Text('Unlock Solo OS Pro', style: TextStyle(fontWeight: FontWeight.w700)),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  void _showUpgradeSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.textMuted,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text('Solo OS Pro',
+                style: TextStyle(color: AppColors.textPrimary, fontSize: 24, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            const Text('Unlimited AI, unlimited ideas, unlimited growth.',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+            const SizedBox(height: 24),
+            _PricingTile(
+              title: 'Monthly',
+              price: '\$9.99/mo',
+              isPopular: false,
+              onTap: () { Navigator.pop(ctx); _snack('Coming soon! You\'re on the early access list.'); },
+            ),
+            const SizedBox(height: 10),
+            _PricingTile(
+              title: 'Yearly',
+              price: '\$79.99/yr',
+              subtitle: 'Save 33%',
+              isPopular: true,
+              onTap: () { Navigator.pop(ctx); _snack('Coming soon! You\'re on the early access list.'); },
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Subscriptions coming soon. Your trial continues in the meantime.',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _snack(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
@@ -350,6 +550,73 @@ class _InfoRow extends StatelessWidget {
           Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
           Text(value, style: const TextStyle(color: AppColors.textMuted, fontSize: 14)),
         ],
+      ),
+    );
+  }
+}
+
+class _PricingTile extends StatelessWidget {
+  final String title, price;
+  final String? subtitle;
+  final bool isPopular;
+  final VoidCallback onTap;
+
+  const _PricingTile({
+    required this.title,
+    required this.price,
+    this.subtitle,
+    required this.isPopular,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        decoration: BoxDecoration(
+          color: isPopular ? AppColors.primary.withOpacity(0.1) : AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isPopular ? AppColors.primary : AppColors.textMuted.withOpacity(0.3),
+            width: isPopular ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(title, style: const TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w600)),
+                      if (isPopular) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text('BEST', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700)),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (subtitle != null)
+                    Text(subtitle!, style: const TextStyle(color: AppColors.accentGreen, fontSize: 11)),
+                ],
+              ),
+            ),
+            Text(price, style: TextStyle(
+              color: isPopular ? AppColors.primary : AppColors.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            )),
+          ],
+        ),
       ),
     );
   }

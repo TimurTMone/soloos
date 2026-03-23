@@ -9,13 +9,17 @@ class ClaudeService {
   factory ClaudeService() => _instance;
   ClaudeService._internal();
 
-  static const String _baseUrl = 'https://api.anthropic.com/v1/messages';
-  static const String _model = 'claude-opus-4-6';
+  static const String _directUrl = 'https://api.anthropic.com/v1/messages';
+  static const String _model = 'claude-sonnet-4-20250514';
   static const String _version = '2023-06-01';
+
+  /// Set this to your Vercel deployment URL (e.g. https://solo-os.vercel.app)
+  static String proxyBaseUrl = 'https://solo-os.vercel.app';
 
   final StorageService _storage = StorageService();
 
   String get _apiKey => _storage.apiKey;
+  bool get _useProxy => _apiKey.isEmpty;
 
   // ─── Core call ────────────────────────────────────────────────
 
@@ -32,39 +36,75 @@ class ClaudeService {
     String? systemPrompt,
     int maxTokens = 1024,
   }) async {
-    if (_apiKey.isEmpty) {
-      return '⚠️ API key not set. Add it in Settings.';
-    }
-
     try {
-      final response = await http.post(
-        Uri.parse(_baseUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': _apiKey,
-          'anthropic-version': _version,
-        },
-        body: jsonEncode({
-          'model': _model,
-          'max_tokens': maxTokens,
-          if (systemPrompt != null) 'system': systemPrompt,
-          'messages': [
-            {'role': 'user', 'content': userMessage},
-          ],
-        }),
-      ).timeout(const Duration(seconds: 30));
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['content'][0]['text'] as String;
-      } else {
-        final err = jsonDecode(response.body);
-        return '❌ Error ${response.statusCode}: ${err['error']?['message'] ?? response.body}';
+      if (_useProxy) {
+        return await _callProxy(userMessage, systemPrompt: systemPrompt, maxTokens: maxTokens);
       }
+      return await _callDirect(userMessage, systemPrompt: systemPrompt, maxTokens: maxTokens);
     } on TimeoutException {
       return '❌ Request timed out. Check your connection.';
     } catch (e) {
       return '❌ Network error: $e';
+    }
+  }
+
+  /// Call via your Vercel proxy (no API key needed on client)
+  Future<String> _callProxy(
+    String userMessage, {
+    String? systemPrompt,
+    int maxTokens = 1024,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$proxyBaseUrl/api/claude'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'messages': [
+          {'role': 'user', 'content': userMessage},
+        ],
+        if (systemPrompt != null) 'system': systemPrompt,
+        'max_tokens': maxTokens,
+      }),
+    ).timeout(const Duration(seconds: 30));
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['text'] as String;
+    } else if (response.statusCode == 429) {
+      return '⚠️ Daily AI limit reached. Add your own API key in Settings for unlimited access.';
+    } else {
+      return '❌ AI service unavailable. Try again later.';
+    }
+  }
+
+  /// Call Anthropic API directly (user has their own key)
+  Future<String> _callDirect(
+    String userMessage, {
+    String? systemPrompt,
+    int maxTokens = 1024,
+  }) async {
+    final response = await http.post(
+      Uri.parse(_directUrl),
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': _apiKey,
+        'anthropic-version': _version,
+      },
+      body: jsonEncode({
+        'model': _model,
+        'max_tokens': maxTokens,
+        if (systemPrompt != null) 'system': systemPrompt,
+        'messages': [
+          {'role': 'user', 'content': userMessage},
+        ],
+      }),
+    ).timeout(const Duration(seconds: 30));
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['content'][0]['text'] as String;
+    } else {
+      final err = jsonDecode(response.body);
+      return '❌ Error ${response.statusCode}: ${err['error']?['message'] ?? response.body}';
     }
   }
 
