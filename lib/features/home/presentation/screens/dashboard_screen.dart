@@ -15,6 +15,7 @@ import '../../../gamification/domain/models/user_progress.dart';
 import '../../../work/presentation/screens/standup_screen.dart';
 import '../../../family/presentation/screens/contacts_screen.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
+import '../../../settings/presentation/screens/calendar_screen.dart';
 import 'work_hub_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -32,6 +33,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     WorkHubScreen(),     // index 1: Projects + Ideas
     LifeHubScreen(),     // index 2: Habits + Family
     FinanceDashboardScreen(), // index 3: Finance
+    CalendarScreen(),    // index 4: Calendar
   ];
 
   void _navigate(int index) => setState(() => _currentIndex = index);
@@ -845,6 +847,7 @@ class _BottomNav extends StatelessWidget {
       (Icons.work_rounded, Icons.work_outline_rounded, ls.t('nav_work')),
       (Icons.favorite_rounded, Icons.favorite_border_rounded, 'Life'),
       (Icons.account_balance_wallet_rounded, Icons.account_balance_wallet_outlined, ls.t('nav_finance')),
+      (Icons.calendar_month_rounded, Icons.calendar_month_outlined, 'Calendar'),
     ];
 
     return Container(

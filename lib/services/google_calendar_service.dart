@@ -155,6 +155,12 @@ class GoogleCalendarService extends ChangeNotifier {
     }
   }
 
+  // ─── Add Local Event (when not signed in to Google) ──────────
+  void addLocalEvent(CalendarEvent event) {
+    _events.add(event);
+    notifyListeners();
+  }
+
   // ─── Import Birthdays from Google Contacts ───────────────────
   Future<List<Contact>> importBirthdays() async {
     if (_currentUser == null) return [];
