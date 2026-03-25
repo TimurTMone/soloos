@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
   // Backgrounds
@@ -48,9 +47,10 @@ class AppTheme {
         onPrimary: Colors.white,
         onSurface: AppColors.textPrimary,
       ),
-      textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme).apply(
+      textTheme: ThemeData.dark().textTheme.apply(
         bodyColor: AppColors.textPrimary,
         displayColor: AppColors.textPrimary,
+        fontFamily: '.SF Pro Text', // iOS system font; Android falls back to Roboto
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.background,

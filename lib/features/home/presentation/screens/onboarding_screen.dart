@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../../services/storage_service.dart';
 import '../../../../services/demo_data_seeder.dart';
@@ -132,7 +131,7 @@ class _IntroPage extends StatelessWidget {
               const SizedBox(height: 24),
               Text(
                 page.title,
-                style: GoogleFonts.inter(
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 40,
                   fontWeight: FontWeight.w800,
@@ -202,7 +201,7 @@ class _SetupPage extends StatelessWidget {
             const SizedBox(height: 20),
             Text(
               "Let's set up\nyour Solo OS",
-              style: GoogleFonts.inter(
+              style: const TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: 32,
                 fontWeight: FontWeight.w800,

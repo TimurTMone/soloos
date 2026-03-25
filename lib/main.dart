@@ -42,8 +42,8 @@ void main() async {
       SupabaseService.markInitialized();
       supabaseReady = true;
     }
-  } catch (_) {
-    // No env or invalid credentials — run in local-only mode
+  } catch (e) {
+    debugPrint('Supabase init skipped: $e');
   }
 
   // Local storage always available

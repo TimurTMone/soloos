@@ -132,6 +132,8 @@ class _HomeTabState extends State<_HomeTab> {
             children: [
               Text(
                 '$greeting, ${storage.userName.isEmpty ? 'Chief' : storage.userName} 👋',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 20,

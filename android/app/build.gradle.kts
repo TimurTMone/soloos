@@ -31,11 +31,26 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            val keystoreFile = file(System.getenv("SOLOOS_KEYSTORE") ?: "../keystore/soloos-release.jks")
+            if (keystoreFile.exists()) {
+                storeFile = keystoreFile
+                storePassword = System.getenv("SOLOOS_STORE_PASSWORD") ?: ""
+                keyAlias = System.getenv("SOLOOS_KEY_ALIAS") ?: "soloos"
+                keyPassword = System.getenv("SOLOOS_KEY_PASSWORD") ?: ""
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            val releaseConfig = signingConfigs.findByName("release")
+            val hasReleaseKey = releaseConfig?.storeFile?.exists() == true
+            signingConfig = if (hasReleaseKey) releaseConfig else signingConfigs.getByName("debug")
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }

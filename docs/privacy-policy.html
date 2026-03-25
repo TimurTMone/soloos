@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solo OS - Privacy Policy</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f23; color: #e2e8f0; line-height: 1.7; padding: 24px; max-width: 720px; margin: 0 auto; }
+    h1 { font-size: 28px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+    h2 { font-size: 20px; font-weight: 700; color: #a78bfa; margin: 32px 0 12px; }
+    p, li { font-size: 15px; color: #94a3b8; margin-bottom: 12px; }
+    ul { padding-left: 20px; }
+    a { color: #a78bfa; }
+    .date { color: #64748b; font-size: 13px; margin-bottom: 24px; }
+    .card { background: #1e1e3a; border-radius: 12px; padding: 20px; margin: 16px 0; }
+  </style>
+</head>
+<body>
+  <h1>Privacy Policy</h1>
+  <p class="date">Last updated: March 25, 2026</p>
+
+  <div class="card">
+    <p><strong>Solo OS</strong> ("we", "our", "the app") is built by Timur Mone. This policy explains how we handle your data.</p>
+    <p><strong>TL;DR:</strong> Your data stays on your device by default. We don't sell your data. Period.</p>
+  </div>
+
+  <h2>1. Data We Collect</h2>
+  <p>Solo OS collects and stores the following data <strong>locally on your device</strong>:</p>
+  <ul>
+    <li><strong>Profile information</strong> - Your name (entered during onboarding)</li>
+    <li><strong>Projects &amp; tasks</strong> - Project names, task descriptions, completion status</li>
+    <li><strong>Financial data</strong> - Income, expenses, obligations you enter manually</li>
+    <li><strong>Habits</strong> - Habit names and daily completion records</li>
+    <li><strong>Ideas</strong> - Idea titles, descriptions, and AI validation results</li>
+    <li><strong>Contacts</strong> - Names, birthdays, and relationships you add</li>
+    <li><strong>Daily standup logs</strong> - Your wins, challenges, and priorities text</li>
+    <li><strong>Voice recordings</strong> - Processed on-device for speech-to-text; audio is not stored or transmitted</li>
+  </ul>
+
+  <h2>2. How Data Is Stored</h2>
+  <p>By default, all data is stored <strong>locally on your device</strong> using SharedPreferences. Data never leaves your phone unless you explicitly opt in to cloud sync.</p>
+  <p>If you choose to sign in with Supabase (optional), your data is synced to a secured Supabase database to enable cross-device access. Supabase uses row-level security and encrypted connections.</p>
+
+  <h2>3. Third-Party Services</h2>
+  <p>Solo OS integrates with the following third-party services:</p>
+  <ul>
+    <li><strong>Anthropic Claude API</strong> - When you use AI features (daily digest, standup analysis, idea validation), your text input is sent to Anthropic's API for processing. Anthropic's privacy policy applies. We use a rate-limited proxy or your own API key.</li>
+    <li><strong>Google Calendar &amp; Contacts</strong> - If you connect your Google account, we access your calendar events and contact birthdays via Google APIs. We only read and create calendar events; we do not modify or delete your existing data.</li>
+    <li><strong>RevenueCat</strong> - For subscription management. RevenueCat processes purchase receipts from Apple/Google. No personal data beyond purchase status is shared.</li>
+    <li><strong>Apple App Store / Google Play</strong> - Standard platform billing for subscriptions.</li>
+  </ul>
+
+  <h2>4. Data We Do NOT Collect</h2>
+  <ul>
+    <li>We do not collect analytics or usage tracking data</li>
+    <li>We do not use advertising SDKs</li>
+    <li>We do not collect device identifiers for profiling</li>
+    <li>We do not sell, rent, or share your data with third parties</li>
+    <li>We do not store voice recordings - speech is processed on-device</li>
+  </ul>
+
+  <h2>5. Data Deletion</h2>
+  <p>You can delete all your data at any time from <strong>Settings &gt; Danger Zone &gt; Reset All Data</strong>. This permanently removes all locally stored data. If you use Supabase sync, you can also delete your account by contacting us.</p>
+
+  <h2>6. Children's Privacy</h2>
+  <p>Solo OS is not directed at children under 13. We do not knowingly collect data from children.</p>
+
+  <h2>7. Changes to This Policy</h2>
+  <p>We may update this policy from time to time. Changes will be posted on this page with an updated date.</p>
+
+  <h2>8. Contact</h2>
+  <p>Questions about this policy? Email us at <a href="mailto:privacy@soloos.app">privacy@soloos.app</a></p>
+</body>
+</html>

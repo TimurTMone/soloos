@@ -119,23 +119,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 14),
 
           // ── Notifications ─────────────────────────────────────
-          _Section(title: 'NOTIFICATIONS', children: [
+          _Section(title: loc.t('notifications_section'), children: [
             Row(
               children: [
                 const Icon(Icons.notifications_active_rounded,
                     color: AppColors.accent, size: 22),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Daily Digest',
-                          style: TextStyle(
+                      Text(loc.t('daily_digest_title'),
+                          style: const TextStyle(
                               color: AppColors.textPrimary,
                               fontSize: 14,
                               fontWeight: FontWeight.w500)),
-                      Text('Morning summary at 8:00 AM',
-                          style: TextStyle(
+                      Text(loc.t('daily_digest_sub'),
+                          style: const TextStyle(
                               color: AppColors.textSecondary, fontSize: 12)),
                     ],
                   ),
@@ -147,7 +147,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     await _notifs.toggleDailyDigest(val);
                     setState(() => _digestEnabled = val);
                     if (val && mounted) {
-                      _snack('Daily digest enabled — see you at 8 AM!');
+                      _snack(loc.t('daily_digest_enabled'));
                     }
                   },
                 ),
@@ -157,7 +157,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 14),
 
           // ── Share & Invite ─────────────────────────────────────
-          _Section(title: 'SHARE', children: [
+          _Section(title: loc.t('share_section'), children: [
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -170,7 +170,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   );
                 },
                 icon: const Icon(Icons.share_rounded, size: 18),
-                label: const Text('Share Solo OS with a friend'),
+                label: Text(loc.t('share_btn')),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.accentGreen,
                   padding: const EdgeInsets.symmetric(vertical: 14),
@@ -178,9 +178,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Word of mouth is our #1 growth channel. Share with a fellow solopreneur!',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+            Text(
+              loc.t('share_sub'),
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
               textAlign: TextAlign.center,
             ),
           ]),
@@ -339,7 +339,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final trialDays = pro.trialDaysLeft;
 
     return _Section(
-      title: 'SUBSCRIPTION',
+      title: loc.t('subscription_section'),
       children: [
         if (isPro) ...[
           const Row(
