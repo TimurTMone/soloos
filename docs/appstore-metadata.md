@@ -4,10 +4,10 @@
 Solo OS
 
 ## Subtitle (30 chars max)
-AI OS for Solopreneurs
+Run Your Business. All of It.
 
 ## Keywords (100 chars max)
-solopreneur,ai,productivity,finance,habits,standup,calendar,projects,ideas,tracker
+solopreneur,freelance,ai,productivity,finance,habits,standup,projects,ideas,tracker,business,indie
 
 ## Category
 Primary: Productivity
@@ -15,43 +15,53 @@ Secondary: Finance
 
 ## Description
 
-Solo OS is the AI-powered operating system for solopreneurs — manage your entire business and life from one app.
+You didn't start a business to drown in spreadsheets.
 
-WHAT YOU GET:
+Solo OS is the all-in-one operating system for solopreneurs. Projects, money, habits, ideas, contacts — one app, zero chaos. Plus an AI co-founder that actually does useful work.
 
-- AI Daily Digest — Start each morning with an AI-generated briefing of your day: tasks, finances, habits, and priorities.
+WHAT SOLO OS DOES FOR YOU:
 
-- Daily Standup with Voice — Log your wins, challenges, and tomorrow's priorities. Use voice-to-text or type. AI analyzes your patterns and gives coaching.
+Morning Briefing
+Wake up to an AI-generated rundown of your day — priorities, deadlines, finances, and what needs attention. No more "what should I do first?"
 
-- Project & Task Manager — Track multiple projects with prioritized tasks. See completion rates at a glance.
+Daily Standup
+Log your wins, challenges, and tomorrow's plan. Voice or text. AI spots patterns in your work and gives coaching you'd pay a consultant for.
 
-- Finance Dashboard — Track income streams, expenses, obligations, and debts. See your net balance and monthly trends.
+Projects & Tasks
+Track every project with prioritized tasks. See what's moving, what's stuck, and what's done — at a glance.
 
-- Habit Tracker — Build powerful daily routines with streak tracking. See your consistency on a mini-calendar.
+Money Dashboard
+Income streams, expenses, obligations, debts. Know your numbers without opening a spreadsheet. Ever.
 
-- Ideas Pipeline — Keep max 3 active ideas. AI validates your ideas and generates content scripts for any platform.
+Habit Streaks
+Build routines that stick. Streak tracking, mini-calendar, daily check-ins. Consistency compounds — this makes sure you see it.
 
-- Calendar with Google Sync — View and create events. Two-way sync with Google Calendar.
+Ideas Pipeline (max 3 active)
+Stop collecting ideas. Start validating them. AI scores viability and writes content scripts for YouTube, Twitter, LinkedIn — so you ship, not just dream.
 
-- Contacts & Birthdays — Never miss a birthday. Import from Google Contacts or add manually.
+Contacts & Birthdays
+Never forget a birthday. Never lose a contact. Import from Google or add manually.
 
-- Gamification — Earn XP for completing tasks, habits, and standups. Level up and maintain your streak.
+Gamification
+Earn XP for tasks, habits, and standups. Level up. Maintain streaks. It's dumb — and it works.
 
-WHO IT'S FOR:
+WHO THIS IS FOR:
 
-Solo OS is built for freelancers, creators, indie hackers, consultants, and anyone running a one-person business. If you juggle projects, track finances, build habits, and want AI on your team — this is your app.
+Freelancers. Creators. Indie hackers. Consultants. Coaches. Anyone running a business by themselves who's tired of duct-taping 10 different apps together.
 
-PRIVACY FIRST:
+If you've ever thought "I need a COO but can't afford one" — this is that.
 
-All data stored locally on your device by default. No analytics. No ads. No data selling. Optional cloud sync available.
+PRIVACY:
+
+Your data stays on your device. No analytics. No ads. We don't sell your data because we don't want your data. Optional cloud sync when you want it.
 
 Available in English, Russian, and Kyrgyz.
 
 ## What's New (v1.0.0)
-First release! Includes AI daily digest, voice standup, project management, finance tracking, habit tracker, ideas pipeline, Google Calendar sync, gamification, and 3-language support.
+First release. AI daily digest, voice standup, project management, finance tracking, habit streaks, ideas pipeline, Google Calendar sync, gamification, shared circles for family/partners. 3 languages.
 
 ## Promotional Text (170 chars max)
-Your AI co-pilot for solopreneur life. Track projects, finances, habits, and ideas — all in one app. Start your 30-day free trial.
+One app for your entire solopreneur life. Projects, money, habits, ideas — plus AI that handles the 80% you shouldn't be doing. Try free for 30 days.
 
 ## Support URL
 https://soloos.app/support
