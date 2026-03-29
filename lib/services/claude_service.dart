@@ -14,8 +14,8 @@ class ClaudeService {
   static const String _model = 'claude-sonnet-4-20250514';
   static const String _version = '2023-06-01';
 
-  /// Set this to your Vercel deployment URL (e.g. https://solo-os.vercel.app)
-  static String proxyBaseUrl = 'https://solo-os.vercel.app';
+  /// Vercel backend URL (hosts /api/claude proxy)
+  static String proxyBaseUrl = 'https://solo-os-backend.vercel.app';
 
   final StorageService _storage = StorageService();
   final ProService _pro = ProService();
