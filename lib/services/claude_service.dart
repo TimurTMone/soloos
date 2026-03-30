@@ -14,8 +14,8 @@ class ClaudeService {
   static const String _model = 'claude-sonnet-4-20250514';
   static const String _version = '2023-06-01';
 
-  /// Vercel backend URL (hosts /api/claude proxy)
-  static String proxyBaseUrl = 'https://solo-os-backend.vercel.app';
+  /// Backend URL (hosts /api/claude proxy) — set from .env in main.dart
+  static String proxyBaseUrl = 'https://solo-os-fastapi.onrender.com';
 
   final StorageService _storage = StorageService();
   final ProService _pro = ProService();
@@ -65,7 +65,7 @@ class ClaudeService {
     }
   }
 
-  /// Call via your Vercel proxy (no API key needed on client)
+  /// Call via backend proxy (no API key needed on client)
   Future<String> _callProxy(
     String userMessage, {
     String? systemPrompt,

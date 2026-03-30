@@ -8,6 +8,7 @@ import 'services/storage_service.dart';
 import 'services/locale_service.dart';
 import 'services/google_calendar_service.dart';
 import 'services/api_service.dart';
+import 'services/claude_service.dart';
 import 'services/notification_service.dart';
 import 'services/theme_service.dart';
 import 'features/auth/presentation/screens/auth_screen.dart';
@@ -38,6 +39,7 @@ void main() async {
     await dotenv.load(fileName: '.env');
     final baseUrl = dotenv.env['API_BASE_URL'] ?? '';
     if (baseUrl.isNotEmpty) {
+      ClaudeService.proxyBaseUrl = baseUrl;
       apiReady = true;
     }
   } catch (e) {

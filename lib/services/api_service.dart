@@ -37,6 +37,9 @@ class ApiService {
 
   /// Call once at startup to restore tokens from secure storage.
   static Future<void> init() async {
+    // Fire-and-forget warm-up ping (wakes Render from cold start)
+    http.get(Uri.parse('$_baseUrl/api/health')).ignore();
+
     // Migrate from plain SharedPreferences to secure storage (one-time)
     await _migrateToSecureStorage();
 
