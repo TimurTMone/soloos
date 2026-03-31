@@ -33,18 +33,14 @@ class HabitsViewModel extends ChangeNotifier {
     try {
       if (_useDb) {
         final rows = await ApiService.getAll('habits', orderBy: 'created_at', ascending: true);
-        final completionRows = await ApiService.getAll('habit_completions', orderBy: 'completed_date');
 
-        // Group completions by habit_id
-        final completionsByHabit = <String, List<DateTime>>{};
-        for (final r in completionRows) {
-          final hid = r['habit_id'] as String;
-          completionsByHabit.putIfAbsent(hid, () => []).add(DateTime.parse(r['completed_date']));
-        }
-
-        _habits = rows
-            .map((r) => Habit.fromRow(r, completedDates: completionsByHabit[r['id']] ?? []))
-            .toList();
+        _habits = rows.map((r) {
+          // Backend returns completions eagerly loaded with each habit
+          final completions = (r['completions'] as List? ?? [])
+              .map((c) => DateTime.parse(c['completed_date']))
+              .toList();
+          return Habit.fromRow(r, completedDates: completions);
+        }).toList();
       } else {
         _habits = _storage.getHabits();
       }

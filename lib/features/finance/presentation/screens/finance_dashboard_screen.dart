@@ -22,11 +22,22 @@ class FinanceDashboardScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Finance'),
+        actions: [
+          if (ApiService.isAuthenticated)
+            IconButton(
+              icon: const Icon(Icons.people_outline_rounded, color: AppColors.textSecondary, size: 22),
+              onPressed: () => _showPartnerSheet(context),
+              tooltip: 'Family partners',
+            ),
+        ],
+      ),
       body: Column(
         children: [
           // Scope toggle
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: Row(
               children: [
                 for (final entry in [
