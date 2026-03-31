@@ -352,7 +352,7 @@ class ApiService {
 
     if (res.statusCode >= 400) {
       final parsed = jsonDecode(res.body);
-      throw ApiException(parsed['error'] ?? 'Request failed');
+      throw ApiException(parsed['detail'] ?? parsed['error'] ?? 'Request failed (${res.statusCode})', statusCode: res.statusCode);
     }
 
     return jsonDecode(res.body);
@@ -397,7 +397,7 @@ class ApiService {
   static String? _tryParseError(String body) {
     try {
       final json = jsonDecode(body);
-      return json['error'] as String?;
+      return (json['detail'] ?? json['error']) as String?;
     } catch (_) {
       return null;
     }

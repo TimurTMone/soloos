@@ -10,7 +10,10 @@ import '../../../../services/pro_service.dart';
 import '../../../../services/notification_service.dart';
 import '../../../../services/theme_service.dart';
 import '../../../../services/analytics_service.dart';
+import '../../../../services/api_service.dart';
+import '../../../auth/presentation/screens/auth_screen.dart';
 import '../../../home/presentation/screens/onboarding_screen.dart';
+import '../../../home/presentation/screens/dashboard_screen.dart';
 import '../../../admin/presentation/screens/admin_dashboard_screen.dart';
 import 'calendar_screen.dart';
 
@@ -206,6 +209,76 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ]),
           if (_biometricAvailable) const SizedBox(height: 14),
+
+          // ── Account ──────────────────────────────────────────
+          _Section(title: 'Account', children: [
+            if (ApiService.isAuthenticated)
+              Row(
+                children: [
+                  const Icon(Icons.person_rounded, color: AppColors.primary, size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(ApiService.email ?? 'Signed in',
+                            style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500)),
+                        const Text('Syncing across devices',
+                            style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      await ApiService.signOut();
+                      if (mounted) {
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+                          (route) => false,
+                        );
+                      }
+                    },
+                    child: const Text('Sign Out', style: TextStyle(color: AppColors.accentRed, fontSize: 13)),
+                  ),
+                ],
+              )
+            else
+              GestureDetector(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => AuthScreen(
+                        onAuthSuccess: () {
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(builder: (_) => const DashboardScreen()),
+                            (route) => false,
+                          );
+                        },
+                      ),
+                    ),
+                  );
+                },
+                child: const Row(
+                  children: [
+                    Icon(Icons.login_rounded, color: AppColors.primary, size: 22),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Sign In',
+                              style: TextStyle(color: AppColors.primary, fontSize: 14, fontWeight: FontWeight.w600)),
+                          Text('Sync your data and invite collaborators',
+                              style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right_rounded, color: AppColors.textMuted, size: 20),
+                  ],
+                ),
+              ),
+          ]),
+          const SizedBox(height: 14),
 
           // ── Subscription ──────────────────────────────────────
           _buildSubscriptionSection(loc),
