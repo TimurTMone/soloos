@@ -153,7 +153,7 @@ class ContactsViewModel extends ChangeNotifier {
     await _storage.saveContacts(_contacts);
     notifyListeners();
     if (_useDb) {
-      try { await ApiService.delete('contacts', contact.id); } catch (_) {}
+      try { await ApiService.delete('contacts', contact.id); } catch (e) { debugPrint('API delete contact failed: $e'); }
     }
   }
 }

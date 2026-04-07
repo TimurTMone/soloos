@@ -27,7 +27,8 @@ class ApiService {
   static const _circuitCooldown = Duration(seconds: 30);
 
   static String get _baseUrl =>
-      dotenv.env['API_BASE_URL'] ?? 'http://localhost:3000';
+      dotenv.env['API_BASE_URL'] ??
+      (kDebugMode ? 'http://localhost:3000' : 'https://solo-os-fastapi.onrender.com');
 
   // ── State ─────────────────────────────────────────────────────────────────
 

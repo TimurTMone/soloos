@@ -108,7 +108,7 @@ class HabitsViewModel extends ChangeNotifier {
     await _storage.saveHabits(_habits);
     notifyListeners();
     if (_useDb) {
-      try { await ApiService.delete('habits', habit.id); } catch (_) {}
+      try { await ApiService.delete('habits', habit.id); } catch (e) { debugPrint('API delete habit failed: $e'); }
     }
   }
 }

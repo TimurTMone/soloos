@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../../services/storage_service.dart';
-import '../../../../services/demo_data_seeder.dart';
 import '../../../../services/pro_service.dart';
 import '../../../../services/claude_service.dart';
 import '../../../../services/locale_service.dart';
@@ -59,9 +58,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final habit = _habitController.text.trim();
 
     await _storage.setUserName(name);
-
-    // Seed base demo data first (finance, contacts, extra projects)
-    await DemoDataSeeder.seedIfEmpty(_storage);
 
     // Try AI-powered personalized setup
     try {

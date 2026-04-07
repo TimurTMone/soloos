@@ -177,7 +177,7 @@ class FamilyViewModel extends ChangeNotifier {
     await _repo.deleteReminder(id);
     await _refresh();
     if (_useDb) {
-      try { await ApiService.delete('family_reminders', id); } catch (_) {}
+      try { await ApiService.delete('family_reminders', id); } catch (e) { debugPrint('API delete reminder failed: $e'); }
     }
   }
 
@@ -217,7 +217,7 @@ class FamilyViewModel extends ChangeNotifier {
     }
     notifyListeners();
     if (_useDb) {
-      try { await ApiService.delete('relationship_notes', id); } catch (_) {}
+      try { await ApiService.delete('relationship_notes', id); } catch (e) { debugPrint('API delete note failed: $e'); }
     }
   }
 

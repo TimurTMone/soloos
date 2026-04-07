@@ -241,7 +241,7 @@ class FinanceViewModel extends ChangeNotifier {
     _debts = _repo.getDebts();
     notifyListeners();
     if (_useDb) {
-      try { await ApiService.delete('debts', id); } catch (_) {}
+      try { await ApiService.delete('debts', id); } catch (e) { debugPrint('API delete debt failed: $e'); }
     }
   }
 
@@ -279,7 +279,7 @@ class FinanceViewModel extends ChangeNotifier {
     _obligations = _repo.getObligations();
     notifyListeners();
     if (_useDb) {
-      try { await ApiService.delete('obligations', id); } catch (_) {}
+      try { await ApiService.delete('obligations', id); } catch (e) { debugPrint('API delete obligation failed: $e'); }
     }
   }
 
@@ -314,7 +314,7 @@ class FinanceViewModel extends ChangeNotifier {
     _incomeStreams = _repo.getIncomeStreams();
     notifyListeners();
     if (_useDb) {
-      try { await ApiService.delete('income_streams', id); } catch (_) {}
+      try { await ApiService.delete('income_streams', id); } catch (e) { debugPrint('API delete income_stream failed: $e'); }
     }
   }
 
@@ -335,7 +335,7 @@ class FinanceViewModel extends ChangeNotifier {
     _expenses = _repo.getExpenses();
     notifyListeners();
     if (_useDb) {
-      try { await ApiService.delete('expenses', id); } catch (_) {}
+      try { await ApiService.delete('expenses', id); } catch (e) { debugPrint('API delete expense failed: $e'); }
     }
   }
 

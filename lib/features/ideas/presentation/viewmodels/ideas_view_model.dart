@@ -90,7 +90,7 @@ class IdeasViewModel extends ChangeNotifier {
     await _storage.saveIdeas(all);
     await _loadIdeas();
     if (_useDb) {
-      try { await ApiService.delete('ideas', ideaId); } catch (_) {}
+      try { await ApiService.delete('ideas', ideaId); } catch (e) { debugPrint('API delete ideas failed: $e'); }
     }
   }
 

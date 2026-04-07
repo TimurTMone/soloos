@@ -26,7 +26,8 @@ class AnalyticsService {
   bool _initialized = false;
 
   String get _baseUrl =>
-      dotenv.env['API_BASE_URL'] ?? 'http://localhost:3000';
+      dotenv.env['API_BASE_URL'] ??
+      (kDebugMode ? 'http://localhost:3000' : 'https://solo-os-fastapi.onrender.com');
 
   /// Call once at startup.
   Future<void> init() async {

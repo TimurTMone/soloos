@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
@@ -21,9 +22,13 @@ class ProService extends ChangeNotifier {
   bool _revenueCatReady = false;
 
   // ── RevenueCat config ─────────────────────────────────────────
-  // Set these in RevenueCat dashboard → API Keys
-  static const _iosApiKey = 'test_DhNYipyoUnwqgTmNPUqXdpgwHPs';
-  static const _androidApiKey = 'test_DhNYipyoUnwqgTmNPUqXdpgwHPs';
+  // Production keys from .env; test keys only in debug builds
+  static String get _iosApiKey =>
+      dotenv.env['REVENUECAT_IOS_KEY'] ??
+      (kDebugMode ? 'test_DhNYipyoUnwqgTmNPUqXdpgwHPs' : '');
+  static String get _androidApiKey =>
+      dotenv.env['REVENUECAT_ANDROID_KEY'] ??
+      (kDebugMode ? 'test_DhNYipyoUnwqgTmNPUqXdpgwHPs' : '');
 
   // Product identifiers (must match App Store Connect / Google Play Console)
   static const entitlementId = 'pro';
@@ -77,8 +82,9 @@ class ProService extends ChangeNotifier {
   }
 
   Future<void> _initRevenueCat() async {
-    // Skip if API keys aren't configured yet
-    if (_iosApiKey.contains('YOUR_') && _androidApiKey.contains('YOUR_')) {
+    // Skip if API keys aren't configured
+    if (_iosApiKey.isEmpty && _androidApiKey.isEmpty) {
+      debugPrint('RevenueCat: no API keys configured — skipping init');
       return;
     }
 

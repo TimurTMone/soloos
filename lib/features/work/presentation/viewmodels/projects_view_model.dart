@@ -86,7 +86,7 @@ class ProjectsViewModel extends ChangeNotifier {
     if (_useDb) {
       try {
         await ApiService.delete('projects', project.id);
-      } catch (_) {}
+      } catch (e) { debugPrint('Failed to delete project from API: $e'); }
     }
   }
 
@@ -163,9 +163,7 @@ class ProjectsViewModel extends ChangeNotifier {
     if (_useDb) {
       try {
         await ApiService.delete('tasks', task.id);
-      } catch (_) {
-        // Local delete already persisted; backend sync can fail gracefully
-      }
+      } catch (e) { debugPrint('Failed to delete task from API: $e'); }
     }
   }
 
