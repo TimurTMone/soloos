@@ -12,6 +12,7 @@ import 'services/claude_service.dart';
 import 'services/notification_service.dart';
 import 'services/theme_service.dart';
 import 'services/analytics_service.dart';
+import 'services/pro_service.dart';
 import 'features/auth/presentation/screens/auth_screen.dart';
 import 'features/ideas/presentation/viewmodels/ideas_view_model.dart';
 import 'features/dashboard/presentation/viewmodels/dashboard_view_model.dart';
@@ -60,6 +61,9 @@ void main() async {
 
   // Initialize analytics (batched, offline-safe)
   await AnalyticsService().init();
+
+  // Restore Pro/trial status (persists across restarts)
+  await ProService().init();
 
   final localeService = LocaleService();
   await localeService.init();

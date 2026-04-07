@@ -100,8 +100,8 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     } on ApiException catch (e) {
       setState(() => _error = e.message);
-    } catch (e) {
-      setState(() => _error = e.toString());
+    } catch (_) {
+      setState(() => _error = 'Something went wrong. Check your connection and try again.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -144,8 +144,8 @@ class _AuthScreenState extends State<AuthScreen> {
       widget.onAuthSuccess?.call();
     } on ApiException catch (e) {
       setState(() => _error = e.message);
-    } catch (e) {
-      setState(() => _error = e.toString());
+    } catch (_) {
+      setState(() => _error = 'Something went wrong. Check your connection and try again.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }

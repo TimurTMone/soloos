@@ -148,10 +148,6 @@ class _HomeTabState extends State<_HomeTab> {
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.notifications_none_rounded, color: AppColors.textSecondary),
-              onPressed: () {},
-            ),
-            IconButton(
               icon: const Icon(Icons.settings_outlined, color: AppColors.textSecondary),
               onPressed: () => Navigator.push(
                 context,

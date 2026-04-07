@@ -90,8 +90,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     context.read<FinanceViewModel>().reload();
     context.read<FamilyViewModel>().reload();
 
-    Navigator.of(context).pushReplacement(
+    Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const DashboardScreen()),
+      (route) => false,
     );
   }
 

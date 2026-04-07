@@ -182,7 +182,42 @@ class _IdeasList extends StatelessWidget {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: ideas.length,
-      itemBuilder: (ctx, i) => _IdeaCard(idea: ideas[i]),
+      itemBuilder: (ctx, i) {
+        final idea = ideas[i];
+        return Dismissible(
+          key: ValueKey(idea.id),
+          direction: DismissDirection.endToStart,
+          background: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 20),
+            margin: const EdgeInsets.only(bottom: 14),
+            decoration: BoxDecoration(
+              color: AppColors.accentRed.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(Icons.delete_outline, color: AppColors.accentRed),
+          ),
+          confirmDismiss: (_) async {
+            return await showDialog<bool>(
+              context: ctx,
+              builder: (c) => AlertDialog(
+                backgroundColor: AppColors.card,
+                title: const Text('Delete idea?', style: TextStyle(color: AppColors.textPrimary)),
+                content: Text(idea.title, style: const TextStyle(color: AppColors.textSecondary)),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+                  TextButton(
+                    onPressed: () => Navigator.pop(c, true),
+                    child: const Text('Delete', style: TextStyle(color: AppColors.accentRed)),
+                  ),
+                ],
+              ),
+            ) ?? false;
+          },
+          onDismissed: (_) => ctx.read<IdeasViewModel>().deleteIdea(idea.id),
+          child: _IdeaCard(idea: idea),
+        );
+      },
     );
   }
 }
