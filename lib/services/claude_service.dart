@@ -48,6 +48,9 @@ class ClaudeService {
     String? systemPrompt,
     int maxTokens = 1024,
   }) async {
+    if (!_storage.aiConsentGiven) {
+      return '⚠️ AI features require data processing consent. Go to Settings > Privacy to enable.';
+    }
     try {
       String result;
       if (_useProxy) {

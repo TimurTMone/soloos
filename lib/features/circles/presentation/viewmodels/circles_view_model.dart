@@ -132,6 +132,29 @@ class CirclesViewModel extends ChangeNotifier {
     }
   }
 
+  Future<bool> reportMember(String circleId, String memberId, String reason) async {
+    try {
+      await _post('/api/circles/$circleId/members/$memberId/report', body: {'reason': reason});
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> blockMember(String circleId, String memberId) async {
+    try {
+      await _post('/api/circles/$circleId/members/$memberId/block');
+      await loadCircles();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
   // Direct HTTP helpers using ApiService internals
   static Future<dynamic> _post(String path, {Map<String, dynamic>? body}) async {
     return ApiService.directRequest('POST', path, body: body);

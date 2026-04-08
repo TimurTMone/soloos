@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../../services/storage_service.dart';
 import '../../../../services/locale_service.dart';
@@ -33,6 +34,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late bool _digestEnabled;
   bool _biometricEnabled = false;
   bool _biometricAvailable = false;
+  bool _analyticsEnabled = true;
+  bool _aiConsentGiven = false;
 
   @override
   void initState() {
@@ -40,6 +43,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _nameCtrl.text = _storage.userName;
     _apiKeyCtrl.text = _storage.apiKey;
     _digestEnabled = _notifs.digestEnabled;
+    _analyticsEnabled = AnalyticsService().enabled;
+    _aiConsentGiven = _storage.aiConsentGiven;
     _loadBiometricState();
   }
 
@@ -475,10 +480,115 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 14),
           ],
 
+          // ── Privacy ──────────────────────────────────────────────
+          _Section(title: loc.t('privacy_section'), children: [
+            // Analytics toggle
+            Row(
+              children: [
+                const Icon(Icons.bar_chart_rounded, color: AppColors.accentBlue, size: 22),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(loc.t('analytics_label'),
+                          style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500)),
+                      Text(loc.t('analytics_sub'),
+                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                    ],
+                  ),
+                ),
+                Switch.adaptive(
+                  value: _analyticsEnabled,
+                  activeColor: AppColors.primary,
+                  onChanged: (val) async {
+                    await AnalyticsService().setEnabled(val);
+                    setState(() => _analyticsEnabled = val);
+                    if (mounted) _snack(val ? loc.t('analytics_enabled') : loc.t('analytics_disabled'));
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            // AI data disclosure
+            Row(
+              children: [
+                const Icon(Icons.smart_toy_rounded, color: AppColors.accent, size: 22),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(loc.t('ai_disclosure_title'),
+                          style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500)),
+                      Text(
+                        _aiConsentGiven ? 'Enabled' : 'Disabled',
+                        style: TextStyle(
+                          color: _aiConsentGiven ? AppColors.accentGreen : AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Switch.adaptive(
+                  value: _aiConsentGiven,
+                  activeColor: AppColors.primary,
+                  onChanged: (val) async {
+                    if (val) {
+                      final accepted = await _showAiDisclosure();
+                      if (accepted != true) return;
+                    }
+                    await _storage.setAiConsentGiven(val);
+                    setState(() => _aiConsentGiven = val);
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            // Privacy policy link
+            GestureDetector(
+              onTap: () => launchUrl(Uri.parse('https://soloos.app/privacy')),
+              child: Row(
+                children: [
+                  const Icon(Icons.privacy_tip_outlined, color: AppColors.primary, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(loc.t('privacy_policy'),
+                        style: const TextStyle(color: AppColors.primary, fontSize: 14, fontWeight: FontWeight.w500)),
+                  ),
+                  const Icon(Icons.open_in_new_rounded, color: AppColors.textMuted, size: 16),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap: () => launchUrl(Uri.parse('https://soloos.app/terms')),
+              child: Row(
+                children: [
+                  const Icon(Icons.description_outlined, color: AppColors.primary, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(loc.t('terms_of_use'),
+                        style: const TextStyle(color: AppColors.primary, fontSize: 14, fontWeight: FontWeight.w500)),
+                  ),
+                  const Icon(Icons.open_in_new_rounded, color: AppColors.textMuted, size: 16),
+                ],
+              ),
+            ),
+          ]),
+          const SizedBox(height: 14),
+
           // ── About ─────────────────────────────────────────────
           _Section(title: loc.t('about_section'), children: [
-            _InfoRow(loc.t('version'), '1.0.0'),
-            _InfoRow(loc.t('model'), 'Claude Opus 4.6'),
+            _InfoRow(loc.t('version'), '1.1.0'),
+            _InfoRow(loc.t('model'), 'Claude Sonnet 4'),
             _InfoRow(loc.t('storage'), loc.t('storage_val')),
           ]),
           const SizedBox(height: 14),
@@ -684,6 +794,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 8),
           ],
         ),
+      ),
+    );
+  }
+
+  Future<bool?> _showAiDisclosure() {
+    final loc = context.read<LocaleService>();
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.card,
+        title: Text(loc.t('ai_disclosure_title'),
+            style: const TextStyle(color: AppColors.textPrimary)),
+        content: Text(loc.t('ai_disclosure_body'),
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.5)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(loc.t('ai_disclosure_decline'),
+                style: const TextStyle(color: AppColors.textMuted)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(loc.t('ai_disclosure_accept')),
+          ),
+        ],
       ),
     );
   }

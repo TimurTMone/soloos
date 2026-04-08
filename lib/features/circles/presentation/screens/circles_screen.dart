@@ -275,6 +275,41 @@ class _CirclesScreenState extends State<CirclesScreen> {
                             color: m.role == 'owner' ? AppColors.accent : AppColors.textMuted,
                             fontSize: 11, fontWeight: FontWeight.w500)),
                       ),
+                      if (m.role != 'owner')
+                        PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_vert_rounded, size: 18, color: AppColors.textMuted),
+                          color: AppColors.card,
+                          onSelected: (action) {
+                            Navigator.pop(ctx);
+                            if (action == 'report') {
+                              _showReportDialog(context, vm, circle.id, m);
+                            } else if (action == 'block') {
+                              _showBlockConfirm(context, vm, circle.id, m);
+                            }
+                          },
+                          itemBuilder: (_) => [
+                            PopupMenuItem(
+                              value: 'report',
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.flag_outlined, size: 18, color: AppColors.accent),
+                                  const SizedBox(width: 8),
+                                  Text(ls.t('circles_report'), style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'block',
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.block_rounded, size: 18, color: AppColors.accentRed),
+                                  const SizedBox(width: 8),
+                                  Text(ls.t('circles_block'), style: const TextStyle(color: AppColors.accentRed, fontSize: 13)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                     ],
                   ),
                 )),
@@ -321,6 +356,91 @@ class _CirclesScreenState extends State<CirclesScreen> {
             ],
           ],
         ),
+      ),
+    );
+  }
+  void _showReportDialog(BuildContext context, CirclesViewModel vm, String circleId, CircleMember member) {
+    final reasonCtrl = TextEditingController();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+          left: 20, right: 20, top: 20,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(ls.t('circles_report_title'),
+                style: const TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 6),
+            Text(member.email, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: reasonCtrl,
+              autofocus: true,
+              maxLines: 3,
+              style: const TextStyle(color: AppColors.textPrimary),
+              decoration: InputDecoration(hintText: ls.t('circles_report_hint')),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () async {
+                  if (reasonCtrl.text.trim().isEmpty) return;
+                  final ok = await vm.reportMember(circleId, member.id, reasonCtrl.text);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(ok ? ls.t('circles_report_sent') : (vm.error ?? 'Failed'))),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.accent),
+                child: Text(ls.t('circles_report_btn')),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showBlockConfirm(BuildContext context, CirclesViewModel vm, String circleId, CircleMember member) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.card,
+        title: Text(ls.t('circles_block'),
+            style: const TextStyle(color: AppColors.textPrimary)),
+        content: Text(ls.t('circles_block_confirm'),
+            style: const TextStyle(color: AppColors.textSecondary)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(ls.t('cancel')),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final ok = await vm.blockMember(circleId, member.id);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(ok ? ls.t('circles_blocked') : (vm.error ?? 'Failed'))),
+                );
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: AppColors.accentRed),
+            child: Text(ls.t('circles_block_btn')),
+          ),
+        ],
       ),
     );
   }

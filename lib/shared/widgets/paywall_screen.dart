@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../theme/app_theme.dart';
 import '../../services/pro_service.dart';
 import '../../services/locale_service.dart';
@@ -120,6 +121,36 @@ class PaywallScreen extends StatelessWidget {
                   ls.t('paywall_restore'),
                   style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
                 ),
+              ),
+              // Legal links
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  GestureDetector(
+                    onTap: () => launchUrl(Uri.parse('https://soloos.app/terms')),
+                    child: Text(
+                      ls.t('paywall_terms'),
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 11,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                  const Text('  ·  ',
+                      style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                  GestureDetector(
+                    onTap: () => launchUrl(Uri.parse('https://soloos.app/privacy')),
+                    child: Text(
+                      ls.t('paywall_privacy'),
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 11,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
             ],

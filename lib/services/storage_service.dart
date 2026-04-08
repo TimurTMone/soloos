@@ -43,6 +43,9 @@ class StorageService {
   bool get onboardingDone => prefs.getBool('onboarding_done') ?? false;
   Future<void> setOnboardingDone() => prefs.setBool('onboarding_done', true);
 
+  bool get aiConsentGiven => prefs.getBool('ai_consent_given') ?? false;
+  Future<void> setAiConsentGiven(bool v) => prefs.setBool('ai_consent_given', v);
+
   String get lastAiDigest => prefs.getString('last_ai_digest') ?? '';
   Future<void> setLastAiDigest(String v) => prefs.setString('last_ai_digest', v);
 

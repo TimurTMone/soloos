@@ -59,6 +59,33 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     await _storage.setUserName(name);
 
+    // Show AI disclosure and get consent before first AI call
+    if (!_storage.aiConsentGiven && mounted) {
+      final accepted = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppColors.card,
+          title: Text(ls.t('ai_disclosure_title'),
+              style: const TextStyle(color: AppColors.textPrimary)),
+          content: Text(ls.t('ai_disclosure_body'),
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.5)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(ls.t('ai_disclosure_decline'),
+                  style: const TextStyle(color: AppColors.textMuted)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(ls.t('ai_disclosure_accept')),
+            ),
+          ],
+        ),
+      );
+      await _storage.setAiConsentGiven(accepted == true);
+    }
+
     // Try AI-powered personalized setup
     try {
       final claude = ClaudeService();

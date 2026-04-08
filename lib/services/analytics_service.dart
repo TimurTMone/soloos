@@ -24,6 +24,14 @@ class AnalyticsService {
   String? _sessionId;
   SharedPreferences? _prefs;
   bool _initialized = false;
+  bool _enabled = true;
+
+  bool get enabled => _enabled;
+
+  Future<void> setEnabled(bool value) async {
+    _enabled = value;
+    _prefs?.setBool('analytics_enabled', value);
+  }
 
   String get _baseUrl =>
       dotenv.env['API_BASE_URL'] ??
@@ -34,6 +42,7 @@ class AnalyticsService {
     if (_initialized) return;
     _prefs = await SharedPreferences.getInstance();
     _sessionId = const Uuid().v4();
+    _enabled = _prefs!.getBool('analytics_enabled') ?? true;
     _initialized = true;
 
     // Start periodic flush
@@ -52,7 +61,7 @@ class AnalyticsService {
     String category = 'general',
     Map<String, dynamic>? properties,
   }) {
-    if (!_initialized) return;
+    if (!_initialized || !_enabled) return;
 
     _buffer.add({
       'event': event,

@@ -291,6 +291,34 @@ const Map<String, Map<String, String>> appStrings = {
     'paywall_limit_ai': 'Free AI limit reached ({n}/{max} today). Upgrade for unlimited.',
     'paywall_limit_contacts': 'Free plan limit: {max} contacts. Upgrade for unlimited.',
     'paywall_limit_ideas': 'Free plan: max {max} active ideas. Archive one or upgrade.',
+    'paywall_terms': 'Terms of Use',
+    'paywall_privacy': 'Privacy Policy',
+
+    // Privacy & Legal
+    'privacy_section': 'Privacy',
+    'privacy_policy': 'Privacy Policy',
+    'terms_of_use': 'Terms of Use',
+    'analytics_label': 'Usage Analytics',
+    'analytics_sub': 'Help improve Solo OS by sharing anonymous usage data',
+    'analytics_disabled': 'Analytics disabled',
+    'analytics_enabled': 'Analytics enabled',
+
+    // AI Disclosure
+    'ai_disclosure_title': 'AI Data Processing',
+    'ai_disclosure_body': 'Solo OS uses Claude AI by Anthropic to power features like daily digest, idea validation, and standup analysis.\n\nWhen you use AI features, your input is sent to Anthropic\'s servers for processing. Anthropic does not use your data to train models.\n\nYou can review Anthropic\'s privacy policy at anthropic.com/privacy.',
+    'ai_disclosure_accept': 'I Understand',
+    'ai_disclosure_decline': 'Disable AI Features',
+
+    // Circles — Report & Block
+    'circles_report': 'Report Member',
+    'circles_block': 'Block Member',
+    'circles_report_title': 'Report Member',
+    'circles_report_hint': 'Describe the issue...',
+    'circles_report_sent': 'Report submitted. We\'ll review it shortly.',
+    'circles_report_btn': 'Submit Report',
+    'circles_block_confirm': 'Block this member? They won\'t be able to see your shared data.',
+    'circles_blocked': 'Member blocked.',
+    'circles_block_btn': 'Block',
   },
 
   'ru': {
@@ -553,6 +581,34 @@ const Map<String, Map<String, String>> appStrings = {
     'paywall_limit_ai': 'Лимит бесплатных AI-вызовов ({n}/{max} сегодня). Обновитесь.',
     'paywall_limit_contacts': 'Лимит: {max} контактов. Обновитесь для безлимита.',
     'paywall_limit_ideas': 'Бесплатно: макс. {max} активных идей. Архивируйте одну или обновитесь.',
+    'paywall_terms': 'Условия использования',
+    'paywall_privacy': 'Политика конфиденциальности',
+
+    // Privacy & Legal
+    'privacy_section': 'Конфиденциальность',
+    'privacy_policy': 'Политика конфиденциальности',
+    'terms_of_use': 'Условия использования',
+    'analytics_label': 'Аналитика использования',
+    'analytics_sub': 'Помогите улучшить Solo OS, делясь анонимными данными',
+    'analytics_disabled': 'Аналитика отключена',
+    'analytics_enabled': 'Аналитика включена',
+
+    // AI Disclosure
+    'ai_disclosure_title': 'Обработка данных ИИ',
+    'ai_disclosure_body': 'Solo OS использует Claude AI от Anthropic для функций: дайджест, валидация идей и анализ стендапов.\n\nПри использовании ИИ-функций ваш ввод отправляется на серверы Anthropic для обработки. Anthropic не использует ваши данные для обучения моделей.\n\nПолитику конфиденциальности Anthropic можно прочитать на anthropic.com/privacy.',
+    'ai_disclosure_accept': 'Понятно',
+    'ai_disclosure_decline': 'Отключить ИИ',
+
+    // Circles — Report & Block
+    'circles_report': 'Пожаловаться',
+    'circles_block': 'Заблокировать',
+    'circles_report_title': 'Пожаловаться на участника',
+    'circles_report_hint': 'Опишите проблему...',
+    'circles_report_sent': 'Жалоба отправлена. Мы рассмотрим её в ближайшее время.',
+    'circles_report_btn': 'Отправить жалобу',
+    'circles_block_confirm': 'Заблокировать участника? Он не сможет видеть ваши общие данные.',
+    'circles_blocked': 'Участник заблокирован.',
+    'circles_block_btn': 'Заблокировать',
   },
 
   'ky': {
@@ -815,5 +871,33 @@ const Map<String, Map<String, String>> appStrings = {
     'paywall_limit_ai': 'Акысыз AI лимити жетти ({n}/{max} бүгүн). Жаңыртыңыз.',
     'paywall_limit_contacts': 'Лимит: {max} байланыш. Чексиздик үчүн жаңыртыңыз.',
     'paywall_limit_ideas': 'Акысыз: макс {max} активдүү идея. Бирин архивдеңиз же жаңыртыңыз.',
+    'paywall_terms': 'Колдонуу шарттары',
+    'paywall_privacy': 'Купуялык саясаты',
+
+    // Privacy & Legal
+    'privacy_section': 'Купуялык',
+    'privacy_policy': 'Купуялык саясаты',
+    'terms_of_use': 'Колдонуу шарттары',
+    'analytics_label': 'Колдонуу аналитикасы',
+    'analytics_sub': 'Анонимдүү маалыматтар менен Solo OSту жакшыртууга жардам бериңиз',
+    'analytics_disabled': 'Аналитика өчүрүлдү',
+    'analytics_enabled': 'Аналитика иштетилди',
+
+    // AI Disclosure
+    'ai_disclosure_title': 'AI маалымат иштетүү',
+    'ai_disclosure_body': 'Solo OS Anthropic компаниясынын Claude AI колдонот: дайджест, идея текшерүү жана стендап талдоо үчүн.\n\nAI функцияларын колдонгондо, киргизүүңүз Anthropic серверлерине иштетүүгө жөнөтүлөт. Anthropic маалыматыңызды моделдерди үйрөтүү үчүн колдонбойт.\n\nAnthropic купуялык саясатын anthropic.com/privacy дарегинен окуй аласыз.',
+    'ai_disclosure_accept': 'Түшүндүм',
+    'ai_disclosure_decline': 'AI өчүрүү',
+
+    // Circles — Report & Block
+    'circles_report': 'Даттануу',
+    'circles_block': 'Бөгөттөө',
+    'circles_report_title': 'Мүчөгө даттануу',
+    'circles_report_hint': 'Маселени сүрөттөңүз...',
+    'circles_report_sent': 'Даттануу жөнөтүлдү. Жакында карайбыз.',
+    'circles_report_btn': 'Даттануу жөнөтүү',
+    'circles_block_confirm': 'Бул мүчөнү бөгөттөйсүзбү? Ал бөлүшүлгөн маалыматыңызды көрө албайт.',
+    'circles_blocked': 'Мүчө бөгөттөлдү.',
+    'circles_block_btn': 'Бөгөттөө',
   },
 };
