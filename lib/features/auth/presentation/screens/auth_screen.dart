@@ -7,9 +7,8 @@ import '../../../../services/api_service.dart';
 import '../../../../theme/app_theme.dart';
 
 class AuthScreen extends StatefulWidget {
-  final VoidCallback? onSkip;
   final VoidCallback? onAuthSuccess;
-  const AuthScreen({super.key, this.onSkip, this.onAuthSuccess});
+  const AuthScreen({super.key, this.onAuthSuccess});
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -325,36 +324,6 @@ class _AuthScreenState extends State<AuthScreen> {
                   ],
                 ),
 
-                // Skip / demo mode
-                if (widget.onSkip != null) ...[
-                  const SizedBox(height: 32),
-                  Divider(color: AppColors.textMuted.withAlpha(60)),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: OutlinedButton(
-                      onPressed: widget.onSkip,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.textSecondary,
-                        side: BorderSide(
-                            color: AppColors.textMuted.withAlpha(80)),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
-                      ),
-                      child: const Text('Continue without account',
-                          style: TextStyle(
-                              fontSize: 15, fontWeight: FontWeight.w500)),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Data stays on this device only',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        color: AppColors.textMuted, fontSize: 12),
-                  ),
-                ],
               ],
             ),
           ),

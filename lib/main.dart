@@ -160,7 +160,6 @@ class _AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<_AuthGate> {
   bool _didReload = false;
-  bool _skipAuth = false;
 
   void _reloadAllViewModels(BuildContext context) {
     if (_didReload) return;
@@ -174,30 +173,8 @@ class _AuthGateState extends State<_AuthGate> {
     context.read<FamilyViewModel>().reload();
   }
 
-  void _reloadAllForDemo(BuildContext context) {
-    // Reload all ViewModels from local storage after skipping auth
-    context.read<IdeasViewModel>().reload();
-    context.read<HabitsViewModel>().reload();
-    context.read<ProjectsViewModel>().reload();
-    context.read<StandupViewModel>().reload();
-    context.read<ContactsViewModel>().reload();
-    context.read<FinanceViewModel>().reload();
-    context.read<FamilyViewModel>().reload();
-  }
-
   @override
   Widget build(BuildContext context) {
-    // Demo mode — skip auth, use local storage only
-    if (_skipAuth) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _reloadAllForDemo(context);
-      });
-      final storage = StorageService();
-      return storage.onboardingDone
-          ? const DashboardScreen()
-          : const OnboardingScreen();
-    }
-
     if (ApiService.isAuthenticated) {
       // Reload ViewModels once after login so they fetch from API
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -213,7 +190,6 @@ class _AuthGateState extends State<_AuthGate> {
     // Reset reload flag on logout
     _didReload = false;
     return AuthScreen(
-      onSkip: () => setState(() => _skipAuth = true),
       onAuthSuccess: () => setState(() {}),
     );
   }
