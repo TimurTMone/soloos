@@ -53,7 +53,7 @@ If you've ever thought "I need a COO but can't afford one" — this is that.
 
 PRIVACY:
 
-Your data stays on your device. No analytics. No ads. We don't sell your data because we don't want your data. Optional cloud sync when you want it.
+Your data is encrypted and never sold. No ads. Optional cloud sync keeps your devices in sync when you sign in. We collect minimal usage analytics to improve the app — no personal data is shared or sold. Ever.
 
 Available in English, Russian, and Kyrgyz.
 

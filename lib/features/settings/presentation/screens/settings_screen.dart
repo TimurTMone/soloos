@@ -444,34 +444,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ]),
           const SizedBox(height: 14),
 
-          // ── Admin (only for you) ──────────────────────────────
-          _Section(title: 'COMMAND CENTER', children: [
-            GestureDetector(
-              onTap: () {
-                AnalyticsService().featureUsed('admin_dashboard');
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminDashboardScreen()));
-              },
-              child: const Row(
-                children: [
-                  Icon(Icons.dashboard_rounded, color: AppColors.accent, size: 22),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Admin Dashboard',
-                            style: TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500)),
-                        Text('Users, metrics, analytics',
-                            style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                      ],
+          // ── Admin (only for app owner) ─────────────────────────
+          if (ApiService.email == 'timur.mone@gmail.com') ...[
+            _Section(title: 'COMMAND CENTER', children: [
+              GestureDetector(
+                onTap: () {
+                  AnalyticsService().featureUsed('admin_dashboard');
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminDashboardScreen()));
+                },
+                child: const Row(
+                  children: [
+                    Icon(Icons.dashboard_rounded, color: AppColors.accent, size: 22),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Admin Dashboard',
+                              style: TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500)),
+                          Text('Users, metrics, analytics',
+                              style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                        ],
+                      ),
                     ),
-                  ),
-                  Icon(Icons.chevron_right_rounded, color: AppColors.textMuted, size: 20),
-                ],
+                    Icon(Icons.chevron_right_rounded, color: AppColors.textMuted, size: 20),
+                  ],
+                ),
               ),
-            ),
-          ]),
-          const SizedBox(height: 14),
+            ]),
+            const SizedBox(height: 14),
+          ],
 
           // ── About ─────────────────────────────────────────────
           _Section(title: loc.t('about_section'), children: [

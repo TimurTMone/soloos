@@ -543,7 +543,7 @@ class _FinalPage extends StatelessWidget {
           ),
           child: Row(
             children: [
-              const Text('', style: TextStyle(fontSize: 18)),
+              const Text('🚀', style: TextStyle(fontSize: 18)),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(

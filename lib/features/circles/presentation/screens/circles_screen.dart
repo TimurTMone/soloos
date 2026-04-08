@@ -339,7 +339,7 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('', style: TextStyle(fontSize: 48)),
+            const Text('👥', style: TextStyle(fontSize: 48)),
             const SizedBox(height: 16),
             Text(ls.t('circles_empty_title'), style: const TextStyle(color: AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
