@@ -19,8 +19,8 @@ class ApiService {
   static bool _initialized = false;
 
   // ── Retry & Circuit Breaker config ────────────────────────────────────────
-  static const _maxRetries = 2;
-  static const _requestTimeout = Duration(seconds: 15);
+  static const _maxRetries = 3;
+  static const _requestTimeout = Duration(seconds: 45);
   static int _consecutiveFailures = 0;
   static DateTime? _circuitOpenUntil;
   static const _circuitThreshold = 5; // open after 5 consecutive failures
